@@ -1,0 +1,16 @@
+{
+  "name": "video-workflow-for-codex-repository",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "smoke": "node tests/smoke.mjs",
+    "render-smoke": "node tests/render-smoke.mjs",
+    "privacy": "node tests/privacy.mjs",
+    "check": "npm run test && npm run smoke && npm run privacy"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

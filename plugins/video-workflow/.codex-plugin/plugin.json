@@ -1,0 +1,47 @@
+{
+  "name": "video-workflow",
+  "version": "0.1.0",
+  "description": "Turn a locked script into a synchronized, verified video with reusable formats, themes, narration providers, and a deterministic renderer.",
+  "author": {
+    "name": "swping999",
+    "url": "https://github.com/swping999"
+  },
+  "homepage": "https://github.com/swping999/video-workflow-for-codex",
+  "repository": "https://github.com/swping999/video-workflow-for-codex",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "video-workflow",
+    "video-production",
+    "captions",
+    "audio-sync"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Video Workflow",
+    "shortDescription": "Build synchronized videos from locked scripts",
+    "longDescription": "Create an isolated video project from a locked script, select a content template and format, generate or import narration, synchronize captions and animation, normalize audio, verify timing, and render a final MP4 without HyperFrames or Remotion.",
+    "developerName": "swping999",
+    "category": "Productivity",
+    "capabilities": [
+      "Locked script and caption source",
+      "Voice and caption synchronization",
+      "Image prompt export",
+      "Audio loudness normalization",
+      "Six reusable content templates",
+      "Landscape, portrait, and social formats",
+      "Deterministic Chromium rendering",
+      "Pre-render quality gates"
+    ],
+    "websiteURL": "https://github.com/swping999/video-workflow-for-codex",
+    "brandColor": "#E8A34A",
+    "composerIcon": "./assets/logo.svg",
+    "logo": "./assets/logo.svg",
+    "logoDark": "./assets/logo-dark.svg",
+    "defaultPrompt": [
+      "Turn this locked script into a verified vertical video.",
+      "Build a six-item list video from this script.",
+      "Check this video project for caption, audio, and timing drift."
+    ]
+  }
+}

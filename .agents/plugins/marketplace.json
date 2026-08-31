@@ -1,0 +1,20 @@
+{
+  "name": "swping999-video",
+  "interface": {
+    "displayName": "Swping999 Video Workflows"
+  },
+  "plugins": [
+    {
+      "name": "video-workflow",
+      "source": {
+        "source": "local",
+        "path": "./plugins/video-workflow"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+node_modules/
+.DS_Store
+*.log
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+
+# Generated episode data should stay local unless intentionally curated.
+episodes/
+**/.media/raw-cues/
+**/.media/balanced-cues/
+**/.media/scene-concats/
+**/renders/
+**/assets/voice-*.wav
+**/assets/voice-manifest.json
+
+# Never publish personal identity or voice-cloning references.
+**/*voice-reference*
+**/*speaker-reference*
+**/*identity-reference*
+**/*presenter-reference*

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Video Workflow">
+  <rect width="256" height="256" rx="52" fill="#F7F2E8"/>
+  <path d="M47 54c43-10 119-10 162 0l-5 139c-48 8-104 8-152 0z" fill="#FBF8F0" stroke="#27251F" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M106 91l65 38-65 38z" fill="#E8A34A" stroke="#27251F" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M69 76h27M69 181h38M164 181h23" stroke="#716B60" stroke-width="9" stroke-linecap="round"/>
+</svg>
