@@ -88,7 +88,10 @@ function buildAudioMix({ ffmpeg, projectRoot, source, story, narrationPath, targ
     filters.push("[narrbase]asplit=2[narrside][narrmix]");
     filters.push(`[${inputIndex}:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=mono,volume=${volume},atrim=0:${story.duration},asetpts=N/SR/TB[bg]`);
     filters.push(`[bg][narrside]sidechaincompress=threshold=${ducking}:ratio=8:attack=15:release=260[ducked]`);
-    filters.push("[narrmix][ducked]amix=inputs=2:duration=first:normalize=0[musicmix]");
+    // Older bundled FFmpeg builds do not expose amix's normalize option. Their
+    // default mix is normalized by the input count, so compensate with volume
+    // after the mix. Final loudness normalization and limiting still run below.
+    filters.push("[narrmix][ducked]amix=inputs=2:duration=first,volume=2[musicmix]");
     baseLabel = "musicmix";
     inputIndex += 1;
   }
@@ -102,7 +105,7 @@ function buildAudioMix({ ffmpeg, projectRoot, source, story, narrationPath, targ
     mixLabels.push(`[sfx${index}]`);
     inputIndex += 1;
   }
-  if (sfx.length) filters.push(`${mixLabels.join("")}amix=inputs=${mixLabels.length}:duration=first:normalize=0[mix]`);
+  if (sfx.length) filters.push(`${mixLabels.join("")}amix=inputs=${mixLabels.length}:duration=first,volume=${mixLabels.length}[mix]`);
   else filters.push(`[${baseLabel}]anull[mix]`);
   const rawPath = path.join(projectRoot, ".media", "audio-mix-raw.wav");
   args.push("-filter_complex", filters.join(";"), "-map", "[mix]", "-ar", "48000", "-ac", "1", "-c:a", "pcm_s16le", rawPath);

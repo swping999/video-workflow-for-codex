@@ -4,9 +4,19 @@
 
 <p align="center">中文 · <a href="README.md">English</a></p>
 
-很多 AI 视频演示最后只给出脚本或几张零散素材。这个 Codex 社区插件可以从一句需求、确认后的逐字稿、结构化内容计划或 CSV/JSON 数据继续完成：配音、图解、动画、字幕、音乐混音、质检、多画幅渲染、封面、SRT/VTT、故事板和事实核查文件。
+**一句话 → 文案 → 配音 → 逐字一致的字幕 → 动画 → 横版、竖版和 4:5 成片。**
+
+<p align="center">
+  <a href="examples/public-demo/output/final.mp4"><img src="docs/demo.gif" width="360" alt="由免费本地工作流真实生成的竖版视频"></a>
+</p>
+
+<p align="center"><a href="examples/public-demo/output/final.mp4">播放 16 秒 MP4</a> · <a href="examples/public-demo">查看可复现交付包</a></p>
+
+这个 Codex 社区插件可以从一句需求、确认后的逐字稿、结构化内容计划或 CSV/JSON 数据继续完成一套经过验证的完整视频交付。
 
 默认路径不需要媒体 API Key、付费配音、生图账号、HyperFrames 或 Remotion。
+
+完整流程：
 
 ```text
 一句需求 / 锁定逐字稿 / CSV / JSON / 本地素材
@@ -43,6 +53,25 @@
 
 自动分类现在会输出置信度和可选的第二类型。普通四段科普不会再因为段落多就被判成清单，“产品用户增长 30%”也会优先识别为数据内容。
 
+### 六种视觉系统，不是一套卡片换六种颜色
+
+下面六张图使用相同的 `social` 画幅和 `editorial` 主题，结构差异只来自内容类型。72 张截图回归负责检查溢出和布局安全；这些精选图则单独展示视觉质量边界。
+
+<table>
+  <tr>
+    <td><strong>科普解释</strong><br><img src="docs/visuals/explainer.png" alt="科普机制图"></td>
+    <td><strong>清单盘点</strong><br><img src="docs/visuals/listicle.png" alt="连续编号清单卡"></td>
+  </tr>
+  <tr>
+    <td><strong>教程流程</strong><br><img src="docs/visuals/workflow.png" alt="输入操作输出流程图"></td>
+    <td><strong>统一维度对比</strong><br><img src="docs/visuals/comparison.png" alt="统一维度对比表"></td>
+  </tr>
+  <tr>
+    <td><strong>产品宣传</strong><br><img src="docs/visuals/promo.png" alt="痛点方案证据宣传结构"></td>
+    <td><strong>数据故事</strong><br><img src="docs/visuals/data-story.png" alt="带来源和坐标的数据图"></td>
+  </tr>
+</table>
+
 ## 完全免费、本地核心
 
 - **配音：**macOS `say`、Windows `System.Speech`、Linux 免费 `espeak-ng`。
@@ -51,7 +80,7 @@
 - **账号：**不需要媒体 API、云配音、生图账号或外部渲染服务。
 - **隐私：**默认路径不会把文案、声音或本地素材发到云端媒体接口。
 
-可以使用自己有权使用的音频和素材，但仓库不包含私人音色、人物照片、个人风格说明、密钥、模型权重或生成成片。
+可以使用自己有权使用的音频和素材。除上面的通用公开案例外，仓库不包含私人音色、人物照片、个人风格说明、密钥、个人成片或模型权重。
 
 ## 尺寸、平台、主题和语言
 
@@ -95,9 +124,9 @@ codex plugin add video-workflow@swping999-video
 
 PLUGIN=plugins/video-workflow
 $PLUGIN/scripts/video-workflow build \
-  --brief "做一个有来源的竖版数据科普视频" \
-  --script examples/demo-script.txt \
-  --plan examples/content-plan.json \
+  --brief "解释为什么字幕会逐渐不同步" \
+  --script examples/public-demo/script.txt \
+  --plan examples/public-demo/content-plan.json \
   --output /tmp/video-workflow-demo \
   --slug video-workflow-demo \
   --type auto \
@@ -110,6 +139,8 @@ $PLUGIN/scripts/video-workflow build \
 ```
 
 数据视频可以增加 `--data /绝对路径/data.csv`，品牌配置可以增加 `--brand /绝对路径/brand.json`。结构化字段见[内容计划参考](plugins/video-workflow/skills/video-workflow/references/content-plan.md)。
+
+仓库内的[公开案例](examples/public-demo)包含需求、锁定逐字稿、内容计划、最终 MP4、封面、逐字一致的 SRT/VTT、故事板 JSON 和事实核查报告。示例使用免费的系统配音，不含私人声音、人物或私有素材。
 
 ## 自定义配音、版本修改和局部重渲染
 

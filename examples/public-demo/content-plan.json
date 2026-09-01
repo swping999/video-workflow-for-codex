@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "type": "explainer",
+  "sources": [],
+  "claims": [],
+  "scenes": [
+    {
+      "visual": {
+        "kind": "hero",
+        "points": ["同一份逐字稿", "真实音频时长", "交付前校验"]
+      }
+    },
+    {
+      "visual": {
+        "kind": "cause-effect",
+        "nodes": [
+          {"id": "copy", "label": "三份内容各自修改"},
+          {"id": "drift", "label": "字幕逐渐错位"}
+        ],
+        "relation": "导致"
+      }
+    },
+    {
+      "visual": {
+        "kind": "summary",
+        "points": ["锁定文案", "测量音频", "验证字幕"]
+      }
+    }
+  ]
+}

@@ -4,7 +4,7 @@
 
 Do not commit voice samples, face or identity references, private scripts, API keys, access tokens, or generated media that you do not have permission to share. The repository intentionally ships without a presenter image or voice reference.
 
-Keep generated episodes outside the repository or in an ignored `episodes/` directory. Review `git status` before every push.
+Keep generated episodes outside the repository or in an ignored `episodes/` directory. The only exception is a deliberately curated, rights-cleared public example added to the privacy-test allowlist. Review `git status` before every push.
 
 Versioned revisions may contain prior scripts and local media under an episode's `revisions/` directory. Treat that directory as private project data and do not commit it unless every archived asset is cleared for publication.
 

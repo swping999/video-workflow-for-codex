@@ -124,12 +124,13 @@ function linkOrCopy(source, destination) {
   try { fs.linkSync(source, destination); } catch { fs.copyFileSync(source, destination); }
 }
 
-function assertDiagnostics(sceneId, diagnostics) {
+function assertDiagnostics(sceneId, diagnostics, { requireAllRevealed = false } = {}) {
   const failures = [];
   if (diagnostics.overflows?.length) failures.push(`text overflow: ${diagnostics.overflows.join(" | ")}`);
   if (diagnostics.safeViolations?.length) failures.push(`safe-area violation: ${diagnostics.safeViolations.join(", ")}`);
   if (diagnostics.missingMedia?.length) failures.push(`missing media: ${diagnostics.missingMedia.join(", ")}`);
   if (diagnostics.layoutIssues?.length) failures.push(`layout issue: ${diagnostics.layoutIssues.join(", ")}`);
+  if (requireAllRevealed && Number(diagnostics.hiddenTimed) > 0) failures.push(`${diagnostics.hiddenTimed} timed visual elements are still hidden`);
   if (Number(diagnostics.contrast) < 4.5) failures.push(`ink/background contrast is ${diagnostics.contrast}:1`);
   if (failures.length) throw new Error(`${sceneId} visual QA failed:\n- ${failures.join("\n- ")}`);
 }
@@ -194,6 +195,13 @@ async function renderVariant({ projectRoot, source, verification, baseStory, for
       if (frame === 0 || frame === frameCount - 1 || frame % Math.max(1, Math.floor(frameCount / 10)) === 0) process.stdout.write(`[${format}] frame ${frame + 1}/${frameCount}\n`);
     }
     const coverSafe = variant.render.platform?.coverSafeArea || variant.render.platform?.safeArea;
+    const firstScene = variant.scenes[0];
+    // Covers should show the complete first-scene composition, not its early
+    // reveal state. Capture just after narration, within the scene tail.
+    const coverMoment = Math.min(
+      firstScene.start + firstScene.duration - 0.05,
+      firstScene.voice.start + firstScene.voice.duration + 0.03,
+    );
     await page.evaluate(async ({ seconds, coverSafe: area }) => {
       const rootElement = document.getElementById("root");
       rootElement.style.setProperty("--safe-top", `${(area.top || 0.12) * 100}%`);
@@ -201,9 +209,9 @@ async function renderVariant({ projectRoot, source, verification, baseStory, for
       rootElement.style.setProperty("--safe-bottom", `${(area.bottom || 0.16) * 100}%`);
       rootElement.style.setProperty("--safe-left", `${(area.left || 0.08) * 100}%`);
       await window.__seekVideo(seconds);
-    }, { seconds: Math.min(variant.scenes[0].voice.start + 0.35, variant.scenes[0].start + variant.scenes[0].duration - 0.05), coverSafe });
+    }, { seconds: coverMoment, coverSafe });
     const coverDiagnostics = await page.evaluate(() => window.__videoDiagnostics());
-    assertDiagnostics("cover", coverDiagnostics);
+    assertDiagnostics("cover", coverDiagnostics, { requireAllRevealed: true });
     qa.push({ sceneId: "cover", ...coverDiagnostics });
     const renderDir = path.join(projectRoot, "renders");
     fs.mkdirSync(renderDir, { recursive: true });
