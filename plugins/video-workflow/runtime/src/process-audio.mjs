@@ -12,7 +12,7 @@ function silenceFile(ffmpeg, directory, duration) {
   const rounded = Number(duration.toFixed(6));
   const target = path.join(directory, `silence-${rounded.toFixed(6)}.wav`);
   if (!fs.existsSync(target)) {
-    run(ffmpeg, ["-y", "-v", "error", "-f", "lavfi", "-i", `anullsrc=r=48000:cl=mono:d=${rounded}`, "-c:a", "pcm_s16le", target], "create timeline silence");
+    run(ffmpeg, ["-y", "-v", "error", "-f", "lavfi", "-i", "anullsrc=r=48000:cl=mono", "-t", String(rounded), "-c:a", "pcm_s16le", target], "create timeline silence");
   }
   return target;
 }
@@ -85,7 +85,7 @@ export function processAudio(projectArg) {
       if (cueIndex < scene.cues.length - 1) {
         const silencePath = path.join(concatDir, `silence-${sentenceGap.toFixed(3)}.wav`);
         if (!fs.existsSync(silencePath)) {
-          run(ffmpeg, ["-y", "-v", "error", "-f", "lavfi", "-i", `anullsrc=r=48000:cl=mono:d=${sentenceGap}`, "-c:a", "pcm_s16le", silencePath], "create sentence gap");
+          run(ffmpeg, ["-y", "-v", "error", "-f", "lavfi", "-i", "anullsrc=r=48000:cl=mono", "-t", String(sentenceGap), "-c:a", "pcm_s16le", silencePath], "create sentence gap");
         }
         concatLines.push(`file '${concatEscape(silencePath)}'`);
         cueCursor += sentenceGap;
