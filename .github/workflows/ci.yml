@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: plugins/video-workflow/runtime/package-lock.json
+      - run: npm ci
+        working-directory: plugins/video-workflow/runtime
+      - run: npm run check
+      - if: matrix.node-version == 22
+        run: npm run render-smoke
