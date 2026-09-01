@@ -7,19 +7,22 @@ import { processAudio } from "./process-audio.mjs";
 import { verifyProject } from "./verify.mjs";
 import { renderProject } from "./render.mjs";
 import { doctor } from "./doctor.mjs";
+import { reviseProject } from "./revision.mjs";
 import { parseArgs, requireArg } from "./utils.mjs";
 
 const help = `Video Workflow for Codex
 
 Usage:
   video-workflow doctor
-  video-workflow build --script <file> --output <directory> --slug <slug> [--brief <one-sentence request>] [--title <title>] [--type auto|explainer|listicle|workflow|comparison|promo|data-story] [--format landscape|portrait|social] [--theme whiteboard|editorial|tech|product] [--quality draft|medium|high]
-  video-workflow create --script <file> --output <directory> --slug <slug> [--brief <one-sentence request>] [--title <title>] [--type auto|explainer|listicle|workflow|comparison|promo|data-story] [--format landscape|portrait|social] [--theme whiteboard|editorial|tech|product]
+  video-workflow build --script <file> --output <directory> --slug <slug> [--plan plan.json] [--data data.csv|json] [--brand brand.json] [--language auto|zh-CN|en-US|...] [--platform generic|douyin|reels|shorts|xiaohongshu] [--type auto|explainer|listicle|workflow|comparison|promo|data-story] [--format landscape|portrait|social] [--formats landscape,portrait,social] [--theme whiteboard|editorial|tech|product] [--quality draft|medium|high]
+  video-workflow create --script <file> --output <directory> --slug <slug> [same content, language, platform, voice, and visual options as build]
+  video-workflow revise --project <directory> --script <file> [--plan plan.json] [--data data.csv|json] [--brand brand.json] [--type auto|...]
   video-workflow export --project <directory>
   video-workflow synthesize --project <directory> [--provider system|files] [--overwrite]
   video-workflow process-audio --project <directory>
   video-workflow verify --project <directory>
-  video-workflow render --project <directory> [--quality draft|medium|high]
+  video-workflow preview --project <directory> [--formats portrait] [--scenes 1,3]
+  video-workflow render --project <directory> [--quality draft|medium|high] [--formats landscape,portrait,social] [--scenes 1,3]
 
 Projects are isolated and never overwritten. Narration and captions remain locked to story-source.json scenes[].cues[].
 The build command is the account-free path: system TTS, built-in visuals, synchronized captions, verification, and final MP4.
@@ -35,6 +38,16 @@ function creationOptions(args) {
     format: args.format ? String(args.format) : "landscape",
     theme: args.theme ? String(args.theme) : "editorial",
     brief: args.brief ? String(args.brief) : null,
+    planPath: args.plan ? String(args.plan) : null,
+    dataPath: args.data ? String(args.data) : null,
+    brandPath: args.brand ? String(args.brand) : null,
+    language: args.language ? String(args.language) : "auto",
+    platform: args.platform ? String(args.platform) : "generic",
+    voice: args.voice ? String(args.voice) : "auto",
+    speed: args.speed ? Number(args.speed) : 1,
+    musicPath: args.music ? String(args.music) : null,
+    sfxManifestPath: args.sfx ? String(args.sfx) : null,
+    pronunciationPath: args.pronunciation ? String(args.pronunciation) : null,
   };
 }
 
@@ -52,7 +65,7 @@ async function main() {
   }
   if (command === "create") {
     const result = createProject(creationOptions(args));
-    console.log(`Created ${result.source.project.type} ${result.source.project.format} project with ${result.source.scenes.length} scenes at ${result.target}`);
+    console.log(`Created ${result.source.project.type} (${Math.round(result.source.project.classificationConfidence * 100)}% classification confidence) ${result.source.project.format} project with ${result.source.scenes.length} scenes at ${result.target}`);
     return;
   }
   if (command === "build") {
@@ -64,11 +77,11 @@ async function main() {
     const synthesized = await synthesizeProject(created.target, { provider: "system" });
     console.log(`[3/6] Generated ${synthesized.generated} cues with free system TTS`);
     const processed = processAudio(created.target);
-    console.log(`[4/6] Built the ${processed.story.duration.toFixed(3)}s audio-led timeline`);
+    console.log(`[4/6] Built the ${processed.story.duration.toFixed(3)}s audio-led timeline, final mix, captions, storyboard, and fact-check files`);
     const verified = verifyProject(created.target);
     console.log(`[5/6] Verified ${verified.scenes} scenes, fingerprint ${verified.fingerprint}`);
-    const rendered = await renderProject(created.target, { quality: args.quality ? String(args.quality) : "high" });
-    console.log(`[6/6] Rendered ${rendered.output}`);
+    const rendered = await renderProject(created.target, { quality: args.quality ? String(args.quality) : "high", formats: args.formats ? String(args.formats) : null, scenes: args.scenes ? String(args.scenes) : null });
+    console.log(`[6/6] Rendered ${rendered.outputs.join(", ")}`);
     return;
   }
 
@@ -78,6 +91,19 @@ async function main() {
     console.log(`Exported ${result.audioRequest.items.length} voice cues and ${result.imageRequest.items.length} image prompts`);
     console.log(result.audioPath);
     console.log(result.imagePath);
+    return;
+  }
+  if (command === "revise") {
+    const result = reviseProject(project, {
+      scriptPath: requireArg(args, "script"),
+      planPath: args.plan ? String(args.plan) : null,
+      dataPath: args.data ? String(args.data) : null,
+      brandPath: args.brand ? String(args.brand) : null,
+      title: args.title ? String(args.title) : null,
+      type: args.type ? String(args.type) : "auto",
+      language: args.language ? String(args.language) : "auto",
+    });
+    console.log(`Created revision ${result.revision}; previous version archived at ${result.archive}`);
     return;
   }
   if (command === "synthesize") {
@@ -95,9 +121,13 @@ async function main() {
     console.log(`Verified ${result.scenes} scenes, ${result.duration.toFixed(3)}s, fingerprint ${result.fingerprint}`);
     return;
   }
-  if (command === "render") {
-    const result = await renderProject(project, { quality: args.quality ? String(args.quality) : "high" });
-    console.log(`Rendered ${result.output}`);
+  if (command === "render" || command === "preview") {
+    const result = await renderProject(project, {
+      quality: command === "preview" ? "draft" : args.quality ? String(args.quality) : "high",
+      formats: args.formats ? String(args.formats) : null,
+      scenes: args.scenes ? String(args.scenes) : null,
+    });
+    console.log(`Rendered ${result.outputs.join(", ")}`);
     return;
   }
   throw new Error(`Unknown command: ${command}\n\n${help}`);

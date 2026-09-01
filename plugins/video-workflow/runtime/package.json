@@ -1,6 +1,6 @@
 {
   "name": "video-workflow-runtime",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "bin": {
@@ -17,6 +17,6 @@
     "puppeteer-core": "25.9.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12.0"
   }
 }

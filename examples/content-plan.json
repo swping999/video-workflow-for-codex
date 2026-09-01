@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "type": "explainer",
+  "sources": [],
+  "claims": [],
+  "scenes": [
+    {"visual": {"kind": "hero", "points": ["One source", "Measured timing", "Verified output"]}},
+    {"visual": {"kind": "cause-effect", "nodes": [{"id": "cause", "label": "Separate copy sources"}, {"id": "effect", "label": "Caption drift"}], "relation": "causes"}},
+    {"visual": {"kind": "summary", "points": ["Lock copy", "Measure audio", "Verify delivery"]}}
+  ]
+}

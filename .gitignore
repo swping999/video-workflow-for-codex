@@ -12,9 +12,13 @@ episodes/
 **/.media/raw-cues/
 **/.media/balanced-cues/
 **/.media/scene-concats/
+**/.media/cache/
 **/renders/
 **/assets/voice-*.wav
+**/assets/audio-master.wav
+**/assets/narration-master.wav
 **/assets/voice-manifest.json
+**/revisions/
 
 # Never publish personal identity or voice-cloning references.
 **/*voice-reference*

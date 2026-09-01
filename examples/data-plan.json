@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "type": "data-story",
+  "sources": [{"id": "demo-report", "title": "Demonstration dataset", "note": "Example values only"}],
+  "chart": {"type": "bar", "labels": ["2024", "2025", "2026"], "values": [18, 31, 46], "unit": "%", "sourceId": "demo-report", "range": "2024–2026", "domain": [0, 50]},
+  "scenes": []
+}

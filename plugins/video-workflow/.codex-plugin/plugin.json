@@ -1,7 +1,7 @@
 {
   "name": "video-workflow",
-  "version": "0.2.0",
-  "description": "Turn one sentence or a locked script into a synchronized, verified MP4 with a completely free local production path.",
+  "version": "1.0.0",
+  "description": "Turn one sentence or a locked script into sourced, synchronized, multi-format video with a free local production path.",
   "author": {
     "name": "swping999",
     "url": "https://github.com/swping999"
@@ -19,8 +19,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Video Workflow",
-    "shortDescription": "One sentence to a free, verified video",
-    "longDescription": "Tell Codex what video to make in one sentence. Codex infers the content type, format, theme, scenes, and script, then the plugin uses free system narration, built-in visuals, synchronized captions and animation, loudness normalization, deterministic rendering, and quality gates to deliver a final MP4 without paid media APIs, HyperFrames, or Remotion.",
+    "shortDescription": "One sentence to sourced, verified video",
+    "longDescription": "Tell Codex what video to make in one sentence. The plugin structures explainers, lists, workflows, comparisons, promos, or real data stories; creates free local narration, content-driven diagrams, synchronized captions and animation; then validates facts, audio, visual safety, and multi-format renders without paid media APIs, HyperFrames, or Remotion.",
     "developerName": "swping999",
     "category": "Productivity",
     "capabilities": [
@@ -31,9 +31,14 @@
       "Built-in code-rendered visuals",
       "Audio loudness normalization",
       "Six reusable content templates",
-      "Landscape, portrait, and social formats",
+      "Real sourced charts and dimensional comparisons",
+      "Platform-safe landscape, portrait, and social outputs",
+      "Multilingual captions, voices, and pronunciation dictionaries",
+      "Optional music, sound effects, and automatic ducking",
+      "SRT, VTT, storyboard, cover, and fact-check deliverables",
+      "Versioned script revision and scene-level render cache",
       "Deterministic Chromium rendering",
-      "Pre-render quality gates"
+      "Visual, factual, audio, and timing quality gates"
     ],
     "websiteURL": "https://github.com/swping999/video-workflow-for-codex",
     "brandColor": "#E8A34A",
@@ -43,6 +48,7 @@
     "defaultPrompt": [
       "Make a vertical explainer video about MCP.",
       "Make a six-item list video about useful Codex Skills.",
+      "Make a sourced data story from this CSV and export all three formats.",
       "Check this video project for caption, audio, and timing drift."
     ]
   }

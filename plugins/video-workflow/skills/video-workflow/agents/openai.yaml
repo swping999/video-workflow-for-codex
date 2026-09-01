@@ -1,6 +1,6 @@
 interface:
   display_name: "Video Workflow"
-  short_description: "Turn one sentence into a free, verified video"
-  default_prompt: "Use $video-workflow to make a vertical explainer video about MCP."
+  short_description: "Build sourced, synchronized, multi-format video"
+  default_prompt: "Use $video-workflow to turn my request into a verified video and export the platform-ready deliverables."
 policy:
   allow_implicit_invocation: true

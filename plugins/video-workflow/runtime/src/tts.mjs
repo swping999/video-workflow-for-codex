@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { mediaBinaries } from "./media-tools.mjs";
+import { espeakVoiceFor } from "./language.mjs";
 import { readJson, run } from "./utils.mjs";
 import { validateLockedSource } from "./source.mjs";
 
@@ -18,6 +19,20 @@ function psQuote(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
 
+const macVoiceCache = new Map();
+
+function automaticMacVoice(say, language) {
+  if (macVoiceCache.has(language)) return macVoiceCache.get(language);
+  const locale = String(language || "en-US").replace("-", "_");
+  const result = run(say, ["-v", "?"], "list macOS voices");
+  const exact = result.stdout.split(/\r?\n/u).find((line) => line.includes(`# ${locale}`));
+  const prefix = locale.split("_")[0];
+  const fallback = result.stdout.split(/\r?\n/u).find((line) => line.includes(`# ${prefix}_`));
+  const selected = (exact || fallback)?.trim().split(/\s+/u)[0] || null;
+  macVoiceCache.set(language, selected);
+  return selected;
+}
+
 export function systemProviderAvailable() {
   if (process.platform === "darwin") return Boolean(executable("say"));
   if (process.platform === "win32") return Boolean(executable("powershell") || executable("pwsh"));
@@ -32,7 +47,8 @@ function synthesizeSystem({ text, output, voice, language, speed }) {
     if (!say) throw new Error("macOS system speech command `say` is unavailable");
     const intermediate = `${output}.aiff`;
     const args = [];
-    if (voice && voice !== "auto") args.push("-v", voice);
+    const selectedVoice = voice && voice !== "auto" ? voice : automaticMacVoice(say, language);
+    if (selectedVoice) args.push("-v", selectedVoice);
     args.push("-r", String(Math.max(80, Math.round(190 * speed))), "-o", intermediate, text);
     run(say, args, "system TTS");
     run(ffmpeg, ["-y", "-v", "error", "-i", intermediate, "-ar", "48000", "-ac", "1", output], "convert system TTS");
@@ -44,7 +60,10 @@ function synthesizeSystem({ text, output, voice, language, speed }) {
     if (!powershell) throw new Error("Windows SpeechSynthesizer is unavailable");
     const textFile = `${output}.txt`;
     fs.writeFileSync(textFile, text);
-    const selectVoice = voice && voice !== "auto" ? `$s.SelectVoice(${psQuote(voice)});` : "";
+    const languagePrefix = String(language || "en-US").split("-")[0];
+    const selectVoice = voice && voice !== "auto"
+      ? `$s.SelectVoice(${psQuote(voice)});`
+      : `$v=$s.GetInstalledVoices() | Where-Object {$_.VoiceInfo.Culture.Name -like ${psQuote(`${languagePrefix}-*`)}} | Select-Object -First 1; if($v){$s.SelectVoice($v.VoiceInfo.Name)};`;
     const script = `Add-Type -AssemblyName System.Speech; $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; ${selectVoice} $s.Rate=${Math.max(-10, Math.min(10, Math.round((speed - 1) * 5)))}; $s.SetOutputToWaveFile(${psQuote(output)}); $s.Speak([IO.File]::ReadAllText(${psQuote(textFile)})); $s.Dispose();`;
     run(powershell, ["-NoProfile", "-NonInteractive", "-Command", script], "system TTS");
     fs.unlinkSync(textFile);
@@ -52,7 +71,7 @@ function synthesizeSystem({ text, output, voice, language, speed }) {
   }
   const espeak = executable("espeak-ng") || executable("espeak");
   if (!espeak) throw new Error("No system TTS found; install espeak-ng or use provider=files");
-  const selectedVoice = voice && voice !== "auto" ? voice : language.split("-")[0];
+  const selectedVoice = voice && voice !== "auto" ? voice : espeakVoiceFor(language);
   run(espeak, ["-v", selectedVoice, "-s", String(Math.max(80, Math.round(175 * speed))), "-w", output, text], "system TTS");
 }
 
@@ -79,7 +98,13 @@ export async function synthesizeProject(projectArg, { provider: providerArg = nu
     }
     if (existing && overwrite) fs.unlinkSync(existing);
     const outputBase = path.join(rawDir, item.id);
-    synthesizeSystem({ text: item.ttsText, output: `${outputBase}.wav`, voice: request.voice, language: request.language, speed: Number(request.speed) });
+    synthesizeSystem({
+      text: item.ttsText,
+      output: `${outputBase}.wav`,
+      voice: item.voice || request.voice,
+      language: item.language || request.language,
+      speed: Number(item.prosody?.rate || request.prosody?.rate || request.speed),
+    });
     generated += 1;
   }
   return { provider, generated, skipped, rawDir, platform: `${os.platform()}-${os.arch()}` };

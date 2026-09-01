@@ -1,24 +1,26 @@
-<h1 align="center">Video Workflow for Codex｜一句话生成视频</h1>
+<h1 align="center">Video Workflow for Codex｜一句话生成完整视频</h1>
 
-<p align="center"><strong>用户只说一句需求，Codex 自动拆解流程，再用完全免费的本地生产链生成同步、可校验的 MP4 成片。</strong></p>
+<p align="center"><strong>一句需求输入，输出有来源、全同步、适配平台的视频成片；默认生产链完全免费、本地运行。</strong></p>
 
 <p align="center">中文 · <a href="README.md">English</a></p>
 
-很多 AI 视频演示最后只给出脚本或几张零散素材。这个 Codex 社区插件会继续完成配音、字幕、动画、音频处理、质检和渲染。默认路径不需要媒体 API Key、付费配音、付费生图账号、HyperFrames 或 Remotion。
+很多 AI 视频演示最后只给出脚本或几张零散素材。这个 Codex 社区插件可以从一句需求、确认后的逐字稿、结构化内容计划或 CSV/JSON 数据继续完成：配音、图解、动画、字幕、音乐混音、质检、多画幅渲染、封面、SRT/VTT、故事板和事实核查文件。
+
+默认路径不需要媒体 API Key、付费配音、生图账号、HyperFrames 或 Remotion。
 
 ```text
-用户一句话
-  → Codex 判断内容类型、尺寸、主题、场景和脚本
-  → 锁定原始需求与生成文案
-  → 操作系统免费配音
-  → 内置图形、卡片、排版和 GSAP 动画
-  → 按真实音频建立时间线，字幕与旁白同源
-  → 响度处理与自动质检
-  → Chromium 逐帧渲染 + FFmpeg
-  → 最终 MP4
+一句需求 / 锁定逐字稿 / CSV / JSON / 本地素材
+  → 判断内容类型并给出置信度，可识别混合类型
+  → 六类内容使用六套结构化视觉语法
+  → 操作系统免费配音和发音词典
+  → 旁白驱动 cue、词级时间、字幕和动画
+  → 可选音乐、音效与自动压低背景音
+  → 横版、竖版、4:5 按平台重新排版
+  → 事实、音频、时序和视觉质检
+  → MP4 + 封面 + SRT/VTT + 故事板 + 核查清单
 ```
 
-## 只需要说一句话
+## 只说一句话
 
 安装后，新建一个 Codex 任务，直接说：
 
@@ -26,103 +28,132 @@
 使用 $video-workflow，做一个讲 MCP 的竖版白板科普视频。
 ```
 
-Codex 会自动补全这句话里没有写出的制作决策：
+需要时，Codex 会先写出完整脚本并锁定，然后选择内容结构、尺寸、平台安全区、主题和语言，再运行确定性的本地生产流程。只有会明显改变事实、身份或结果的歧义才需要确认。
 
-- 选择科普、清单、流程、对比、推广或数据故事结构；
-- 判断横版、竖版或 4:5 社交平台尺寸；
-- 写出完整分场景文案并锁定；
-- 让配音、字幕、画面与动画读取同一份内容；
-- 渲染 MP4，并返回质检指纹。
+## 1.0 不再只是文字卡片
 
-常规制作选项不会反复追问。只有歧义会明显改变事实、人物身份或目标结果时，Codex 才需要确认。
-
-## 全免费核心路径
-
-- **配音：**macOS 使用 `say`，Windows 使用 `System.Speech`，Linux 使用免费的 `espeak-ng`。
-- **画面：**代码生成排版、图形、卡片、箭头、形状和 GSAP 动效。
-- **视频：**使用电脑已有的 Chrome、Chromium 或 Edge，再由 FFmpeg 完成合成。
-- **账号：**不需要配音账号、生图账号、媒体 API Key 或云媒体服务。
-- **隐私：**默认生成过程不会把文案或声音发送到云端媒体接口。
-
-用户仍然可以放入自己有权使用的本地音频，但运行时不包含付费服务适配器。项目会导出可选配图提示词，方便有需要的人自行加素材；不生成这些图也能完成整支视频。
-
-## 支持的内容类型
-
-| 类型 | 适合内容 |
+| 类型 | 专属结构和正确性规则 |
 | --- | --- |
-| `explainer` | 知识科普、概念和术语解释 |
-| `listicle` | Skill、工具、榜单和推荐清单 |
-| `workflow` | 教程、SOP 和流程拆解 |
-| `comparison` | A/B 对比、前后变化和选择建议 |
-| `promo` | 产品功能、发布介绍和广告视频 |
-| `data-story` | 数据、趋势、GitHub 活跃度和报告 |
+| `explainer` | 定义、机制、因果、时间线、结构、类比、误区和循环 |
+| `listicle` | 跨场景连续编号、图标/素材、理由、适用人群、优缺点和评分 |
+| `workflow` | 输入 → 操作 → 输出 → 检查，并支持分支、前置条件、用时、注意事项、演示和验收 |
+| `comparison` | 统一维度对比表、Before/After、权衡、雷达图、判断和结论 |
+| `promo` | 痛点 → 方案 → 演示 → 有来源的证据 → CTA；不编造数据或评价 |
+| `data-story` | CSV/JSON、坐标、单位、来源、时间范围、排序、比例尺、缺失值、标注和旁白数值校验 |
 
-尺寸支持横版 `1920×1080`、竖版 `1080×1920` 和社交平台 `1080×1350`。主题包括 `whiteboard`、`editorial`、`tech` 和 `product`。
+自动分类现在会输出置信度和可选的第二类型。普通四段科普不会再因为段落多就被判成清单，“产品用户增长 30%”也会优先识别为数据内容。
 
-## 同步与质检规则
+## 完全免费、本地核心
 
-- 字幕与旁白读取同一份锁定 cue，不另写一份字幕。
-- 场景时长由处理后的真实音频决定，不按字数猜。
-- 动画跟随旁白 cue 入场，口播结束后停止无效运动。
-- 每条音频执行动态均衡，场景响度目标约 -16 LUFS、峰值约 -1.5 dBTP。
-- 自动检查文案哈希、音频哈希、字幕漂移、cue 顺序、场景空白、尺寸、素材和最终时长。
-- 每期创建独立目录，不覆盖旧项目或旧成片。
-- 公开仓库不包含私人音色、人物身份、模型权重、密钥或生成成片。
+- **配音：**macOS `say`、Windows `System.Speech`、Linux 免费 `espeak-ng`。
+- **画面：**响应式 HTML/CSS/SVG 图解、排版、本地图片/SVG/视频/截图和 GSAP 动画。
+- **音视频：**锁定版本的 FFmpeg、ffprobe，加电脑已有的 Chrome/Chromium/Edge。
+- **账号：**不需要媒体 API、云配音、生图账号或外部渲染服务。
+- **隐私：**默认路径不会把文案、声音或本地素材发到云端媒体接口。
 
-## 环境要求
+可以使用自己有权使用的音频和素材，但仓库不包含私人音色、人物照片、个人风格说明、密钥、模型权重或生成成片。
 
-- Node.js 20 或更高版本
-- Chrome、Chromium 或 Edge
-- macOS、Windows 或 Linux
-- Linux 的一键配音路径需安装 `espeak-ng`
+## 尺寸、平台、主题和语言
 
-FFmpeg、ffprobe、GSAP 和 Puppeteer Core 通过锁定依赖安装。
+- 横版 `landscape`：1920×1080
+- 竖版 `portrait`：1080×1920
+- 4:5 `social`：1080×1350
 
-## 安装 Codex 插件
+平台预设包括 `douyin`、`reels`、`shorts`、`xiaohongshu` 和 `generic`，内容安全区与封面安全区分别处理。同一条通过校验的时间线可以同时输出三种尺寸，而且会重新排版，不是压缩同一画面。
+
+`whiteboard`、`editorial`、`tech`、`product` 四套主题分别定义字体、图标、边框、纹理、转场、动效、字幕和音乐倾向。
+
+语言可以自动判断，也可以通过 `--language` 指定；同时支持多语言字体、系统音色选择、不同语言字幕断句，以及缩写、公式、人名和数字发音词典。
+
+## 正确性和质检
+
+- 旁白、画面字幕、SRT、VTT 必须完整还原同一份锁定文案。
+- 场景时长来自真实音频，动画必须在对应口播结束前完成。
+- 逐句动态均衡，最终混音目标约 -16 LUFS、峰值约 -1.5 dBTP。
+- 真数据图必须有有限数值和来源；否则只能明确标注为趋势示意。
+- 数据场景里说出的数字必须存在于图表标签或数值中。
+- 对比必须有两个对象和同一组维度。
+- 推广里的指标、评价和能力声明必须已核实并关联来源。
+- 自动检查路径、素材缺失、文字溢出、平台安全区、对比度、cue 顺序、空白、响度、峰值、黑帧和成片时长。
+- 视觉回归覆盖 6 类型 × 3 画幅 × 4 主题，共 72 种组合。
+
+## 安装
+
+环境：Node.js 22.12+、Chrome/Chromium/Edge、macOS/Windows/Linux；Linux 一键配音需安装 `espeak-ng`。
 
 ```bash
 codex plugin marketplace add swping999/video-workflow-for-codex --ref main
 codex plugin add video-workflow@swping999-video
 ```
 
-安装后新建一个 Codex 任务，让 Skill 重新载入。
+安装后新建 Codex 任务，让 Skill 重新载入。
 
-## 手动一键生成
-
-Codex 会先生成脚本，再调用确定性运行时。命令会同时记录原始需求和生成脚本：
+## 一键生成
 
 ```bash
 (cd plugins/video-workflow/runtime && npm ci)
 
 PLUGIN=plugins/video-workflow
 $PLUGIN/scripts/video-workflow build \
-  --brief "做一个讲 MCP 的竖版科普视频" \
+  --brief "做一个有来源的竖版数据科普视频" \
   --script examples/demo-script.txt \
-  --output /tmp/mcp-video \
-  --slug mcp-video \
-  --type explainer \
+  --plan examples/content-plan.json \
+  --output /tmp/video-workflow-demo \
+  --slug video-workflow-demo \
+  --type auto \
   --format portrait \
-  --theme whiteboard \
+  --formats landscape,portrait,social \
+  --platform douyin \
+  --theme editorial \
+  --language auto \
   --quality high
 ```
 
-成片位于 `renders/final.mp4`，渲染报告位于 `renders/render-report.json`。
+数据视频可以增加 `--data /绝对路径/data.csv`，品牌配置可以增加 `--brand /绝对路径/brand.json`。结构化字段见[内容计划参考](plugins/video-workflow/skills/video-workflow/references/content-plan.md)。
 
-## 主要文件
+## 自定义配音、版本修改和局部重渲染
+
+```bash
+# 自己有权使用的配音
+video-workflow create ...
+video-workflow export --project /绝对路径/project
+# 按导出的 cue ID 把音频放到 .media/raw-cues/
+video-workflow synthesize --project /绝对路径/project --provider files
+video-workflow process-audio --project /绝对路径/project
+video-workflow verify --project /绝对路径/project
+
+# 修改文案时先把旧版本归档到 revisions/
+video-workflow revise --project /绝对路径/project --script /绝对路径/revised-script.txt
+
+# 只预览或重渲染第 2、4 个场景，其余场景复用缓存
+video-workflow preview --project /绝对路径/project --scenes 2,4
+video-workflow render --project /绝对路径/project --scenes 2,4 --formats landscape,portrait,social
+```
+
+## 交付文件
 
 | 文件 | 用途 |
 | --- | --- |
-| `brief.locked.txt` | 一句话模式中的原始用户需求 |
-| `script.locked.txt` | Codex 生成或用户确认的逐字稿 |
-| `story-source.json` | 文案、画面、配音、尺寸和主题的唯一结构化来源 |
-| `.media/audio-request.json` | 精确到 cue 的配音任务 |
-| `.media/image-prompts.json` | 可选配图任务，不是免费核心的必需项 |
-| `assets/voice-manifest.json` | 音频哈希、时长、响度、峰值和主音轨 |
-| `story.js` | 渲染器读取的真实时间线 |
-| `renders/final.mp4` | 通过校验的最终成片 |
+| `script.locked.txt` | 旁白与字幕唯一逐字稿 |
+| `content-plan.locked.json` | 结构化画面、数据、来源、声明、品牌和素材 |
+| `story-source.json` | 带哈希的工程源数据 |
+| `assets/audio-master.wav` | 人声加可选音乐/音效的最终标准化混音 |
+| `assets/voice-manifest.json` | cue、主音轨和混音的哈希、时长、响度、峰值 |
+| `deliverables/captions.srt` / `.vtt` | 同源字幕 |
+| `deliverables/word-timestamps.json` | 提供或估算的词级时间 |
+| `deliverables/storyboard.html` / `.json` | 可预览与机器可读故事板 |
+| `deliverables/fact-check.md` / `.json` | 来源、声明和图表核查 |
+| `renders/cover-<format>.png` | 平台安全区封面 |
+| `renders/final-<format>.mp4` | 各尺寸成片 |
+| `renders/final.mp4` | 主尺寸兼容输出 |
 
-## 项目定位
+## 仓库验证
 
-这是一个为 Codex 制作的独立社区插件，不是 OpenAI 官方插件，也不是新训练的文生视频模型。它提供自己的生产工作流和确定性浏览器逐帧渲染，不依赖 HyperFrames 或 Remotion。
+```bash
+npm run check          # 单元、音频冒烟、隐私检查
+npm run check:full     # 再加成片冒烟和 72 组合视觉回归
+```
 
-代码使用 MIT License，运行依赖保留各自许可证。更多说明见 [安全政策](SECURITY.md)、[贡献指南](CONTRIBUTING.md) 和 [第三方声明](THIRD_PARTY_NOTICES.md)。
+这是为 Codex 制作的独立社区插件，不是 OpenAI 官方插件，也不是新训练的文生视频模型。更多说明见[安全政策](SECURITY.md)、[贡献指南](CONTRIBUTING.md)、[第三方声明](THIRD_PARTY_NOTICES.md)和[质检交付参考](plugins/video-workflow/skills/video-workflow/references/quality-and-delivery.md)。
+
+代码使用 MIT License，运行依赖保留各自许可证。

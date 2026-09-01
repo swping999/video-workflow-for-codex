@@ -1,87 +1,98 @@
 <h1 align="center">Video Workflow for Codex</h1>
 
-<p align="center"><strong>Tell Codex what video you want in one sentence. Get a synchronized, verified MP4 through a completely free local production path.</strong></p>
+<p align="center"><strong>One request in. Sourced, synchronized, platform-ready video out — through a free local production path.</strong></p>
 
 <p align="center">
-  <img alt="Version 0.2.0" src="https://img.shields.io/badge/version-0.2.0-EF5A38?style=flat-square">
+  <img alt="Version 1.0.0" src="https://img.shields.io/badge/version-1.0.0-EF5A38?style=flat-square">
   <img alt="No paid media API" src="https://img.shields.io/badge/paid%20media%20APIs-none-2E8B57?style=flat-square">
-  <img alt="Node 20+" src="https://img.shields.io/badge/node-20%2B-191919?style=flat-square">
+  <img alt="72 visual combinations" src="https://img.shields.io/badge/visual%20matrix-72%20combinations-3159C9?style=flat-square">
+  <img alt="Node 22.12+" src="https://img.shields.io/badge/node-22.12%2B-191919?style=flat-square">
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-EF5A38?style=flat-square"></a>
 </p>
 
 <p align="center">English · <a href="README.zh-CN.md">中文</a></p>
 
-Most AI video demos stop at a script or a few loose assets. This Codex community plugin goes all the way to a finished video. The default path needs no media API key, paid speech provider, image-generation account, HyperFrames, or Remotion.
+Most AI video demos stop at a script or loose assets. This community plugin turns a one-sentence request, approved script, content plan, or dataset into complete MP4s, covers, captions, a storyboard, and a fact-check report. It does not require a paid media API, speech account, image account, HyperFrames, or Remotion.
 
 ```text
-One-sentence request
-  → Codex infers type, format, theme, scenes, and script
-  → script and original brief are locked
-  → free operating-system narration
-  → built-in diagrams, cards, typography, and GSAP animation
-  → measured audio timeline and verbatim captions
-  → loudness normalization and verification gates
-  → deterministic Chromium frames + FFmpeg
-  → final MP4
+Request / locked script / CSV / JSON / local media
+  → content classification with confidence and optional mixed type
+  → six content-specific structured visual systems
+  → free operating-system narration + pronunciation control
+  → audio-led cue, word, caption, and animation timeline
+  → optional music/SFX with automatic narration ducking
+  → platform-aware landscape, portrait, and 4:5 layouts
+  → factual, audio, timing, and visual quality gates
+  → MP4 + cover + SRT/VTT + storyboard + fact-check files
 ```
 
-## Say one sentence
+## Use it in one sentence
 
-After installing, start a new Codex task and say:
+After installation, start a new Codex task and say:
 
 ```text
 Use $video-workflow to make a vertical whiteboard explainer about MCP.
 ```
 
-Codex handles the production decisions that are missing from the brief:
+Codex drafts and locks the script when needed, chooses the content structure, format, platform safe area, theme, and language, then runs the deterministic local production pipeline. It only asks when ambiguity would materially change facts, identity, or the requested outcome.
 
-- chooses one of six reusable content structures;
-- routes to landscape, portrait, or 4:5 social format;
-- writes a complete scene-by-scene script and locks it;
-- creates narration, captions, visuals, and animation from the same source;
-- renders the MP4 and returns a verification fingerprint.
+## What changed in 1.0
 
-Routine choices do not require a questionnaire. Codex asks only when ambiguity would materially change facts, identity, or the requested outcome.
+This is no longer a generic text-card generator.
 
-## Completely free core
+| Type | Structured visuals and safeguards |
+| --- | --- |
+| `explainer` | Definitions, mechanisms, cause/effect, timelines, structures, analogies, misconceptions, and cycles |
+| `listicle` | Global ranks, icons/assets, reasons, audiences, pros/cons, and scores |
+| `workflow` | Input → operation → output → check, plus branches, prerequisites, estimates, cautions, demos, and acceptance lists |
+| `comparison` | Shared-dimension tables, before/after, trade-offs, radar views, decisions, and a verdict |
+| `promo` | Pain → solution → demo → sourced proof → CTA; no fabricated claims or testimonials |
+| `data-story` | CSV/JSON data, axes, units, sources, ranges, scales, sorting, missing-value policy, annotations, and narration/data checks |
+
+Auto classification now returns confidence and an optional secondary type. A four-paragraph explainer is no longer classified as a list just because it has four paragraphs, and data signals outrank generic product words.
+
+## Free local core
 
 - **Narration:** macOS `say`, Windows `System.Speech`, or free `espeak-ng` on Linux.
-- **Visuals:** code-rendered typography, diagrams, cards, arrows, shapes, and GSAP motion.
-- **Video:** a user-installed Chrome/Chromium/Edge browser plus bundled FFmpeg tooling.
-- **Accounts:** no speech account, image account, API key, or cloud media service is required.
-- **Privacy:** the default build does not send the script or audio to a cloud media endpoint.
+- **Visuals:** responsive HTML/CSS/SVG diagrams, typography, local images/SVG/video/screenshots, and GSAP animation.
+- **Audio/video:** locked FFmpeg and ffprobe packages plus a user-installed Chrome/Chromium/Edge browser.
+- **Accounts:** no media API key, cloud voice, image account, or external renderer.
+- **Privacy:** the default path does not send scripts, voices, or local media to a cloud media endpoint.
 
-Users may supply their own authorized audio files, but the runtime contains no paid-provider adapter. Optional image prompts are exported for people who want to add their own assets; those images are never required for a complete video.
+The runtime can use authorized local narration and media. It never bundles voice samples, face references, user-specific styles, secrets, generated episodes, or model weights.
 
-## Video types and formats
+## Formats, platforms, themes, and languages
 
-| Type | Designed for |
-| --- | --- |
-| `explainer` | Knowledge, concepts, education, and terminology |
-| `listicle` | Skills, tools, recommendations, and rankings |
-| `workflow` | Tutorials, SOPs, and process breakdowns |
-| `comparison` | A/B decisions, before/after, and trade-offs |
-| `promo` | Product features, launches, and ads |
-| `data-story` | Metrics, trends, GitHub activity, and reports |
+Formats:
 
-Formats are `landscape` (1920×1080), `portrait` (1080×1920), and `social` (1080×1350). Themes are `whiteboard`, `editorial`, `tech`, and `product`.
+- `landscape`: 1920×1080
+- `portrait`: 1080×1920
+- `social`: 1080×1350
 
-## Synchronization and quality contract
+Platform presets apply separate content and cover safe areas for `douyin`, `reels`, `shorts`, `xiaohongshu`, and `generic`. One verified timeline can render all three formats with real layout reflow, not just a squeezed canvas.
 
-- Narration and captions share one locked cue source.
-- Scene timing comes from actual processed audio, not word-count estimates.
-- Animation reveals follow narration cues and stop when the spoken section ends.
-- Every cue is dynamically balanced; scene audio targets about -16 LUFS and -1.5 dBTP.
-- Hashes, durations, cue order, caption drift, scene gaps, dimensions, assets, and final output are verified.
-- Every episode uses a new directory; existing work is never overwritten.
-- No personal voice, presenter identity, model weight, secret, or generated episode is bundled.
+Themes — `whiteboard`, `editorial`, `tech`, and `product` — define distinct typography, icons, borders, texture, motion, transitions, captions, and music tendencies.
+
+Language is auto-detected or selected with `--language`. The runtime includes multilingual font routing, operating-system voice selection, language-aware caption breaks, and pronunciation dictionaries for acronyms, formulas, names, and numbers.
+
+## Quality contract
+
+- Narration, on-screen captions, SRT, and VTT reconstruct one locked copy source exactly.
+- Scene and cue timing comes from processed audio; reveals finish before their spoken section ends.
+- Cue audio is dynamically balanced; the final mix targets roughly -16 LUFS and -1.5 dBTP.
+- A real chart requires finite values plus a source. Otherwise it is labeled as an illustration.
+- Numbers spoken in a chart scene must exist in its labels or values.
+- Comparisons require two subjects and the same named dimensions.
+- Promo metrics, testimonials, and capability claims require verification and a source ID.
+- Preflight checks cover paths, missing media, overflow, platform safe areas, contrast, cue order, gaps, loudness, peaks, black frames, and final duration.
+- A screenshot regression matrix covers 6 types × 3 formats × 4 themes = 72 combinations.
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 22.12 or newer
 - Chrome, Chromium, or Edge
 - macOS, Windows, or Linux
-- Linux only: `espeak-ng` for the one-command narration path
+- Linux one-command narration: `espeak-ng`
 
 FFmpeg, ffprobe, GSAP, and Puppeteer Core are installed from the checked-in lockfile.
 
@@ -94,45 +105,73 @@ codex plugin add video-workflow@swping999-video
 
 Start a new Codex task after installation so the Skill is loaded.
 
-## Manual one-command build
-
-Codex writes the script before invoking the deterministic runtime. The CLI records both inputs:
+## One-command build
 
 ```bash
 (cd plugins/video-workflow/runtime && npm ci)
 
 PLUGIN=plugins/video-workflow
 $PLUGIN/scripts/video-workflow build \
-  --brief "Make a vertical explainer about MCP" \
+  --brief "Make a sourced vertical data explainer" \
   --script examples/demo-script.txt \
-  --output /tmp/mcp-video \
-  --slug mcp-video \
-  --type explainer \
+  --plan examples/content-plan.json \
+  --output /tmp/video-workflow-demo \
+  --slug video-workflow-demo \
+  --type auto \
   --format portrait \
-  --theme whiteboard \
+  --formats landscape,portrait,social \
+  --platform douyin \
+  --theme editorial \
+  --language auto \
   --quality high
 ```
 
-The final output is `renders/final.mp4`. `renders/render-report.json` records dimensions, frame count, duration, renderer, and verification fingerprint.
+For data stories, pass `--data /absolute/data.csv` or a JSON chart. For brand reuse, pass `--brand /absolute/brand.json`. See the [content-plan reference](plugins/video-workflow/skills/video-workflow/references/content-plan.md).
 
-## Project contract
+## Staged, revised, and local rendering
+
+```bash
+# Authorized custom narration
+video-workflow create ...
+video-workflow export --project /absolute/project
+# Add one file per exported cue ID to .media/raw-cues/
+video-workflow synthesize --project /absolute/project --provider files
+video-workflow process-audio --project /absolute/project
+video-workflow verify --project /absolute/project
+
+# Versioned copy change; old locked state is archived under revisions/
+video-workflow revise --project /absolute/project --script /absolute/revised-script.txt
+
+# Draft review or scene-local rerender; unaffected scene frames stay cached
+video-workflow preview --project /absolute/project --scenes 2,4
+video-workflow render --project /absolute/project --scenes 2,4 --formats landscape,portrait,social
+```
+
+## Delivered project
 
 | Artifact | Purpose |
 | --- | --- |
-| `brief.locked.txt` | Original one-sentence request in brief mode |
-| `script.locked.txt` | Exact Codex-generated or user-approved copy |
-| `story-source.json` | Single structured source for copy, layout, voice, format, and theme |
-| `.media/audio-request.json` | Exact narration cue jobs |
-| `.media/image-prompts.json` | Optional image jobs; not required by the free core |
-| `assets/voice-manifest.json` | Audio hashes, cue durations, LUFS, peak, and master track |
-| `story.js` | Measured timeline consumed by the renderer |
-| `renders/final.mp4` | Verified final output |
+| `script.locked.txt` | Exact narration/caption source |
+| `content-plan.locked.json` | Structured visuals, data, sources, claims, brand, and media |
+| `story-source.json` | Hashed project source and settings |
+| `assets/audio-master.wav` | Final normalized narration/music/SFX mix |
+| `assets/voice-manifest.json` | Cue, master, and mix hashes, durations, LUFS, and peaks |
+| `deliverables/captions.srt` / `.vtt` | Exact subtitles |
+| `deliverables/word-timestamps.json` | Supplied or estimated word timing |
+| `deliverables/storyboard.html` / `.json` | Review and machine-readable storyboard |
+| `deliverables/fact-check.md` / `.json` | Sources, claims, and chart provenance |
+| `renders/cover-<format>.png` | Platform-safe covers |
+| `renders/final-<format>.mp4` | Format-specific videos |
+| `renders/final.mp4` | Primary compatibility output |
 
-## Scope
+## Verify the repository
 
-This is an independent community plugin built for Codex, not an official OpenAI plugin and not a newly trained text-to-video model. It supplies its own production workflow and deterministic browser-frame renderer without depending on HyperFrames or Remotion.
+```bash
+npm run check          # unit, audio smoke, privacy
+npm run check:full     # plus render smoke and all 72 visual combinations
+```
 
-See [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+This is an independent Codex community plugin, not an official OpenAI plugin or a newly trained text-to-video model. See [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), and the [quality/delivery reference](plugins/video-workflow/skills/video-workflow/references/quality-and-delivery.md).
 
 ## License
 

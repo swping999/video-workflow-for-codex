@@ -1,53 +1,78 @@
 ---
 name: video-workflow
-description: Turn either a one-sentence video request or a finished script into a synchronized, verified MP4 with a completely free local production path. Use for explainers, lists, workflows, comparisons, promos, and data stories when Codex should infer the format, draft and lock the script, build scenes, use system narration, align verbatim captions and animation, normalize audio, and render the final video; do not use for one-off generative clips or automatic social publishing.
+description: Turn a one-sentence video request, locked script, structured content plan, or CSV/JSON dataset into sourced, synchronized, multi-format MP4s through a free local production path. Use for explainers, listicles, tutorials, comparisons, product promos, and data stories when Codex should structure content, generate system narration, align verbatim captions and cue-led animation, render platform-safe videos and covers, and verify copy, facts, charts, audio, layout, and delivery files. Do not use for one-off generative clips or automatic social publishing.
 ---
 
 # Video Workflow
 
 Use the plugin's `scripts/video-workflow` runner. Resolve it to an absolute path before execution.
 
-## Free-core contract
+## Non-negotiable contract
 
-- Complete the default workflow without paid media APIs, API keys, cloud accounts, HyperFrames, Remotion, or external image generation.
-- Use the operating system's free TTS and the built-in diagram, card, typography, and GSAP animation layouts.
-- Accept user-supplied audio through `files` only when the user requests it. Never bundle voice samples, identities, secrets, model weights, or generated episodes.
-- Never publish a video unless the user separately asks.
+- Keep the default path account-free: operating-system TTS, code-rendered visuals, Chromium, FFmpeg, and no paid media API.
+- Never require HyperFrames, Remotion, cloud speech, or external image generation.
+- Never invent chart values, testimonials, metrics, customer evidence, product capabilities, or sources.
+- Treat a chart without data as an explicitly labeled trend illustration. Require a source for a real chart.
+- Keep comparisons on the same named dimensions for both subjects.
+- Lock one copy source. Narration, captions, SRT, and VTT must all use `story-source.json` `scenes[].cues`.
+- Let processed narration determine timing. Complete each reveal before its spoken section ends.
+- Never bundle personal media, voices, identities, secrets, or generated episodes. Never publish unless separately asked.
 
-## One-sentence brief mode
+## Choose the input path
 
-When the user gives a goal but no approved script, treat that sentence as the locked brief and continue without asking routine production questions.
+1. If the user supplies approved wording, use it unchanged.
+2. If the user gives only a goal, treat that sentence as the locked brief, draft a complete script, and save one blank-line-separated paragraph per scene.
+3. If the request contains comparison dimensions, workflow branches, list metadata, brand evidence, data, or local media, create a content-plan JSON. Read [references/content-plan.md](references/content-plan.md).
+4. For current or niche facts, research primary sources first. Record sources and claims in the content plan.
+5. Use `--data` for CSV/JSON chart data, `--brand` for a reusable brand file, and local files for images, SVGs, screenshots, video, music, and sound effects.
 
-1. Infer the content type: `explainer`, `listicle`, `workflow`, `comparison`, `promo`, or `data-story`.
-2. Infer the format. Use `portrait` for 抖音、Reels、Shorts、竖版 or ordinary short-form requests; `social` for 小红书 or 4:5; `landscape` for 横版、YouTube、PPT or presentation requests.
-3. Choose a fitting theme from `whiteboard`, `editorial`, `tech`, or `product`.
-4. Draft a complete natural-language script. Default to 5–8 scenes and roughly 45–90 seconds; use one blank-line-separated paragraph per scene. Do not put emoji numbering or visual-only labels into spoken copy.
-5. Save the generated script to a temporary or adjacent text file. Pass both the original brief and generated script to `build` so the project records their provenance.
-6. Use current or niche facts only after verifying them with appropriate primary sources. Ask a question only when ambiguity would materially change facts, identity, or the requested outcome.
+## Route the video
 
-Once the script is generated, it becomes locked. Narration and captions must both use `story-source.json` `scenes[].cues`; never create a second caption version.
+- Type: `explainer`, `listicle`, `workflow`, `comparison`, `promo`, or `data-story`. Allow the runtime to report a secondary type when confidence is low.
+- Format: `portrait` for 抖音/Reels/Shorts/vertical; `social` for 小红书/4:5; `landscape` for horizontal/YouTube/presentations.
+- Platform: `douyin`, `reels`, `shorts`, `xiaohongshu`, or `generic` so safe areas are applied.
+- Theme: `whiteboard`, `editorial`, `tech`, or `product`. Each theme owns typography, icons, borders, texture, transitions, captions, and motion.
+- Language: use `auto` unless the user specifies a locale. Add a pronunciation dictionary for acronyms, formulas, names, and unusual numbers.
 
-## One-command production
+## Build
 
-1. Run `doctor`. If locked runtime packages are missing, run `npm ci` in the plugin runtime directory.
-2. Run:
+1. Run `doctor`. If runtime packages are absent, run `npm ci` in the plugin runtime directory.
+2. Run one isolated build; never overwrite another project:
 
 ```bash
 <plugin-root>/scripts/video-workflow build \
-  --brief "<the user's one-sentence request>" \
-  --script /absolute/generated-script.txt \
+  --brief "<original request when applicable>" \
+  --script /absolute/script.txt \
+  --plan /absolute/content-plan.json \
+  --data /absolute/data.csv \
   --output /absolute/new-project \
   --slug stable-lowercase-slug \
-  --type <inferred-type> \
-  --format <inferred-format> \
-  --theme <chosen-theme> \
+  --type auto \
+  --format portrait \
+  --formats landscape,portrait,social \
+  --platform douyin \
+  --theme editorial \
+  --language auto \
   --quality high
 ```
 
-3. Return the final MP4 path, duration, dimensions, scene count, and verification fingerprint.
+Omit optional flags when they are not needed. The one-command path creates narration, a measured timeline, SRT/VTT, word timestamps, storyboard, fact-check checklist, covers, and MP4s.
 
-## Finished-script mode
+## Use authorized narration or media
 
-If the user already supplied or approved exact copy, omit `--brief` and pass that script directly to `build`. Treat it as immutable. For user-supplied narration, use the staged `create → export → files → process-audio → verify → render` path described in the reference.
+For user-supplied narration, run `create → export`, place one authorized file per exported cue ID in `.media/raw-cues/`, then run `process-audio → verify → render`. Use `--provider files`; never send those files to a cloud service.
 
-Do not claim completion until verification passes. Read [references/workflow.md](references/workflow.md) for inference rules, command options, project fields, and failure recovery.
+For local images, SVGs, screenshots, or video, reference them in the content plan. The runtime copies and hashes them into the isolated project. Remote media URLs are not fetched automatically.
+
+## Revise and preview
+
+- Use `revise --project ... --script ...` for wording changes. It archives the previous locked version inside `revisions/` before rebuilding provenance.
+- Use `preview --project ... --formats portrait --scenes 2,4` for draft review.
+- Use `render --scenes 2,4` after a local visual change. Scene-level frame caching preserves unaffected scenes.
+- Use `render --formats landscape,portrait,social` to reflow one verified timeline into all supported formats.
+
+## Verify before delivery
+
+Run `verify`, then render. Require all checks to pass: locked hashes; exact captions; chart source and narration/data agreement; comparison structure; claim provenance; audio duration, LUFS, and peak; word timing; media existence; safe areas; text overflow; contrast; black frames; and output duration.
+
+Return paths for MP4s, covers, SRT, VTT, storyboard, fact-check files, duration, dimensions, scene count, and verification fingerprint. Read [references/quality-and-delivery.md](references/quality-and-delivery.md) for failure recovery and the artifact contract.
