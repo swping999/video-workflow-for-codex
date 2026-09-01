@@ -7,6 +7,8 @@ import {
   inferContentTypeDetailed,
   validateContentPlan,
 } from "./content-schema.mjs";
+import { buildCoverPlan, validateCoverPlan } from "./cover-plan.mjs";
+import { buildDirectionPlan, validateDirectionPlan } from "./direction.mjs";
 import {
   defaultPronunciations,
   fontFamilyFor,
@@ -21,6 +23,7 @@ import {
   sha256Text,
   writeJson,
 } from "./utils.mjs";
+import { buildSoundPlan } from "./sound-design.mjs";
 
 const runtimeRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const templateRoot = path.join(runtimeRoot, "templates", "episode");
@@ -122,6 +125,14 @@ function assertChoice(name, value, choices) {
   return value;
 }
 
+function inferredProjectTitle(paragraph, slug) {
+  const text = String(paragraph || "").replace(/\s+/gu, " ").trim();
+  if (!text) return slug;
+  const sentence = text.match(/^.*?[。！？?!](?=$|\s)/u)?.[0] || text.match(/^.*?[。！？?!]/u)?.[0] || text;
+  const characters = [...sentence.trim()];
+  return characters.length > 36 ? `${characters.slice(0, 35).join("")}…` : characters.join("");
+}
+
 export function inferContentType(text, paragraphCount) {
   return inferContentTypeDetailed(text, paragraphCount).primary;
 }
@@ -208,6 +219,9 @@ export function createProject({
   musicPath = null,
   sfxManifestPath = null,
   pronunciationPath = null,
+  soundDesign = "subtle",
+  continuousNarration = true,
+  cacheMaxMb = 1024,
 }) {
   const resolvedScript = path.resolve(scriptPath);
   if (!fs.existsSync(resolvedScript)) throw new Error(`Script not found: ${resolvedScript}`);
@@ -216,7 +230,9 @@ export function createProject({
   assertChoice("format", format, Object.keys(formats));
   assertChoice("theme", theme, themes);
   assertChoice("platform", platform, Object.keys(platforms));
+  assertChoice("soundDesign", soundDesign, ["off", "subtle", "full"]);
   if (!Number.isFinite(Number(speed)) || Number(speed) < 0.5 || Number(speed) > 2) throw new Error("speed must be between 0.5 and 2");
+  if (!Number.isFinite(Number(cacheMaxMb)) || Number(cacheMaxMb) < 32) throw new Error("cacheMaxMb must be at least 32");
 
   const target = path.resolve(outputDir);
   if (fs.existsSync(target)) throw new Error(`Refusing to overwrite existing project: ${target}`);
@@ -236,7 +252,7 @@ export function createProject({
   }));
 
   fs.cpSync(templateRoot, target, { recursive: true });
-  for (const relative of ["assets", "assets/imported", "assets/audio", "renders", "deliverables", ".media/raw-cues", ".media/generated-images", ".media/cache"]) {
+  for (const relative of ["assets", "assets/imported", "assets/audio", "renders", "deliverables", ".media/raw-cues", ".media/raw-scenes", ".media/generated-images", ".media/generated-sfx", ".media/generated-music", ".media/cache"]) {
     fs.mkdirSync(path.join(target, relative), { recursive: true });
   }
 
@@ -249,7 +265,16 @@ export function createProject({
   const storedPlan = cleanStoredPlan(materializedPlan);
   const planText = `${JSON.stringify(storedPlan, null, 2)}\n`;
   const systemTheme = themeSystems[theme];
-  const projectTitle = title || contentPlan.title || String(splitSubtitleCues(lockedParagraphs[0], resolvedLanguage)[0] || slug).replace(/[。！？?!；;：:]$/u, "");
+  const projectTitle = title || contentPlan.title || inferredProjectTitle(lockedParagraphs[0], slug);
+  const directionPlan = validateDirectionPlan(buildDirectionPlan({
+    title: projectTitle,
+    type: contentPlan.type,
+    scenes: storedPlan.scenes,
+    narration: lockedParagraphs,
+  }), lockedParagraphs.length);
+  const directionText = `${JSON.stringify(directionPlan, null, 2)}\n`;
+  const soundPlan = buildSoundPlan({ directionPlan, theme, mode: soundDesign });
+  const soundText = `${JSON.stringify(soundPlan, null, 2)}\n`;
   const pronunciations = [
     ...defaultPronunciations(resolvedLanguage),
     ...contentPlan.pronunciation,
@@ -257,7 +282,7 @@ export function createProject({
   ];
 
   const source = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     project: {
       slug,
       title: projectTitle,
@@ -289,6 +314,16 @@ export function createProject({
       sources: storedPlan.sources,
       claims: storedPlan.claims,
     },
+    direction: {
+      status: "locked",
+      lockedFile: "direction-plan.locked.json",
+      lockedSha256: sha256Text(directionText),
+    },
+    sound: {
+      status: "locked",
+      lockedFile: "sound-plan.locked.json",
+      lockedSha256: sha256Text(soundText),
+    },
     ...(lockedBrief ? {
       brief: {
         source: "user-provided",
@@ -301,6 +336,7 @@ export function createProject({
       provider: "system",
       voice: String(voice || "auto"),
       speed: Number(speed),
+      continuousNarration: Boolean(continuousNarration),
       prosody: { rate: Number(speed), pitch: 0, emphasis: "moderate" },
       sentenceGap: 0.14,
       sceneLead: 0.12,
@@ -311,6 +347,8 @@ export function createProject({
       pronunciationReplacements: pronunciations,
       music: media.music,
       sfx: media.sfx,
+      soundDesign,
+      soundPlan,
     },
     visual: {
       ...systemTheme,
@@ -329,6 +367,9 @@ export function createProject({
       outputs: [format],
       captionFiles: ["srt", "vtt"],
       cover: true,
+      coverCandidates: 3,
+      cacheFormat: "webp",
+      cacheMaxMb: Number(cacheMaxMb),
     },
     scenes: lockedParagraphs.map((paragraph, index) => {
       const planScene = storedPlan.scenes[index];
@@ -347,6 +388,8 @@ export function createProject({
         visual: {
           action: `compose a ${visualKind} scene for ${contentPlan.type} content`,
           model: planScene.visual,
+          direction: directionPlan.scenes[index],
+          captionPosition: planScene.captionPosition || "bottom",
           asset: planScene.asset || planScene.visual.asset || null,
           optionalAssetOutput: `assets/scene-visual-${String(index + 1).padStart(2, "0")}.png`,
         },
@@ -354,9 +397,20 @@ export function createProject({
     }),
   };
 
+  const coverPlan = validateCoverPlan(buildCoverPlan(source, directionPlan));
+  const coverText = `${JSON.stringify(coverPlan, null, 2)}\n`;
+  source.cover = {
+    status: "locked",
+    lockedFile: "cover-plan.locked.json",
+    lockedSha256: sha256Text(coverText),
+  };
+
   fs.writeFileSync(path.join(target, "script.locked.txt"), `${lockedText}\n`);
   if (lockedBrief) fs.writeFileSync(path.join(target, "brief.locked.txt"), `${lockedBrief}\n`);
   fs.writeFileSync(path.join(target, "content-plan.locked.json"), planText);
+  fs.writeFileSync(path.join(target, "direction-plan.locked.json"), directionText);
+  fs.writeFileSync(path.join(target, "sound-plan.locked.json"), soundText);
+  fs.writeFileSync(path.join(target, "cover-plan.locked.json"), coverText);
   writeJson(path.join(target, "story-source.json"), source);
   writeJson(path.join(target, "meta.json"), {
     id: slug,
@@ -369,10 +423,10 @@ export function createProject({
     theme,
     language: resolvedLanguage,
     createdAt: source.project.createdAt,
-    workflow: "video-workflow@1.0.0",
+    workflow: "video-workflow@1.1.0",
   });
   fs.writeFileSync(path.join(target, "story.js"), "window.VIDEO_WORKFLOW_STORY = {\"duration\":1,\"copy\":{},\"audio\":{},\"render\":{},\"scenes\":[]};\n");
-  fs.writeFileSync(path.join(target, "PROJECT.md"), `# ${source.project.title}\n\nGenerated by Video Workflow. Narration and captions are locked. Edit structured visual fields through a content plan, then rebuild this isolated project.\n`);
-  fs.writeFileSync(path.join(target, ".gitignore"), ".media/raw-cues/\n.media/balanced-cues/\n.media/scene-concats/\n.media/render-frames/\n.media/cache/\nrenders/\nrevisions/\nassets/voice-*.wav\nassets/narration-master.wav\nassets/audio-master.wav\nassets/voice-manifest.json\n");
+  fs.writeFileSync(path.join(target, "PROJECT.md"), `# ${source.project.title}\n\nGenerated by Video Workflow. Narration and captions are locked. Use the storyboard editor for visual-only changes, then apply its patch and re-render the selected scenes.\n`);
+  fs.writeFileSync(path.join(target, ".gitignore"), ".media/raw-cues/\n.media/raw-scenes/\n.media/balanced-cues/\n.media/scene-concats/\n.media/render-frames/\n.media/generated-sfx/\n.media/generated-music/\n.media/cache/\nrenders/\nrevisions/\nassets/voice-*.wav\nassets/narration-master.wav\nassets/audio-master.wav\nassets/voice-manifest.json\n");
   return { target, source };
 }

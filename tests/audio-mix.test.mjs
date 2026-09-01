@@ -32,6 +32,29 @@ test("music and sound effects are mixed under narration and verified", () => {
   verifyProject(project);
   const manifest = readJson(path.join(project, "assets", "voice-manifest.json"));
   assert.equal(manifest.mix.music, true);
-  assert.equal(manifest.mix.sfx, 1);
+  assert.equal(manifest.mix.sfx, 2);
+  assert.equal(manifest.mix.generatedSfx, 1);
   assert.ok(fs.statSync(path.join(project, manifest.mix.file)).size > 10_000);
+});
+
+test("continuous scene narration drives cue timing without sentence splices", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "video-workflow-continuous-"));
+  const script = path.join(root, "script.txt");
+  const project = path.join(root, "episode");
+  fs.writeFileSync(script, "第一句说明。第二句继续。\n\n最后一幕总结。\n");
+  const { ffmpeg } = mediaBinaries();
+  createProject({ scriptPath: script, outputDir: project, slug: "continuous-narration", soundDesign: "full", continuousNarration: true });
+  const jobs = exportJobs(project);
+  const rawScenes = path.join(project, ".media", "raw-scenes");
+  for (const [index, scene] of jobs.audioRequest.scenes.entries()) {
+    run(ffmpeg, ["-y", "-v", "error", "-f", "lavfi", "-i", `sine=frequency=${520 + index * 90}:duration=0.9`, "-ar", "48000", "-ac", "1", path.join(rawScenes, `${scene.id}.wav`)], "generate continuous narration fixture");
+  }
+  const processed = processAudio(project);
+  verifyProject(project);
+  assert.equal(processed.story.scenes[0].voice.cues.map((cue) => cue.text).join(""), "第一句说明。第二句继续。");
+  assert.equal(processed.story.scenes[0].voice.cues.length, 2);
+  assert.ok(processed.story.scenes[0].voice.cues.every((cue) => cue.duration > 0));
+  const manifest = readJson(path.join(project, "assets", "voice-manifest.json"));
+  assert.ok(manifest.mix.generatedSfx > 0);
+  assert.equal(manifest.mix.generatedMusic, true);
 });

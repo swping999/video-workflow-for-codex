@@ -1,6 +1,6 @@
 {
   "name": "video-workflow",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Turn one sentence or a locked script into sourced, synchronized, multi-format video with a free local production path.",
   "author": {
     "name": "swping999",
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "Video Workflow",
     "shortDescription": "One sentence to sourced, verified video",
-    "longDescription": "Tell Codex what video to make in one sentence. The plugin structures explainers, lists, workflows, comparisons, promos, or real data stories; creates free local narration, content-driven diagrams, synchronized captions and animation; then validates facts, audio, visual safety, and multi-format renders without paid media APIs, HyperFrames, or Remotion.",
+    "longDescription": "Tell Codex what video to make in one sentence. The plugin structures explainers, lists, workflows, comparisons, promos, or real data stories; directs semantic visuals and motion; creates continuous free local narration, sound design, synchronized captions, independent covers, and multi-format renders; then validates facts, audio, timing, layout, and aesthetics without paid media APIs, HyperFrames, or Remotion.",
     "developerName": "swping999",
     "category": "Productivity",
     "capabilities": [
@@ -28,15 +28,19 @@
       "Account-free one-command build",
       "Locked script and caption source",
       "Voice and caption synchronization",
+      "Semantic visual direction and content-led motion",
       "Built-in code-rendered visuals",
+      "Continuous scene narration and local speech adapters",
       "Audio loudness normalization",
       "Six reusable content templates",
       "Real sourced charts and dimensional comparisons",
       "Platform-safe landscape, portrait, and social outputs",
       "Multilingual captions, voices, and pronunciation dictionaries",
       "Optional music, sound effects, and automatic ducking",
+      "Three independent cover candidates with aesthetic ranking",
+      "Visual storyboard editor and visual-only patching",
       "SRT, VTT, storyboard, cover, and fact-check deliverables",
-      "Versioned script revision and scene-level render cache",
+      "Versioned script revision, WebP scene cache, and safe cache cleanup",
       "Deterministic Chromium rendering",
       "Visual, factual, audio, and timing quality gates"
     ],

@@ -10,6 +10,7 @@ import { formats } from "./project.mjs";
 import { readJson, run, sha256File, sha256Text, writeJson } from "./utils.mjs";
 import { loadProject } from "./source.mjs";
 import { verifyProject } from "./verify.mjs";
+import { cacheStats, enforceCacheLimit } from "./cache.mjs";
 
 const runtimeRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -124,7 +125,7 @@ function linkOrCopy(source, destination) {
   try { fs.linkSync(source, destination); } catch { fs.copyFileSync(source, destination); }
 }
 
-function assertDiagnostics(sceneId, diagnostics, { requireAllRevealed = false } = {}) {
+function assertDiagnostics(sceneId, diagnostics, { requireAllRevealed = false, allowAestheticLow = false } = {}) {
   const failures = [];
   if (diagnostics.overflows?.length) failures.push(`text overflow: ${diagnostics.overflows.join(" | ")}`);
   if (diagnostics.safeViolations?.length) failures.push(`safe-area violation: ${diagnostics.safeViolations.join(", ")}`);
@@ -132,6 +133,16 @@ function assertDiagnostics(sceneId, diagnostics, { requireAllRevealed = false } 
   if (diagnostics.layoutIssues?.length) failures.push(`layout issue: ${diagnostics.layoutIssues.join(", ")}`);
   if (requireAllRevealed && Number(diagnostics.hiddenTimed) > 0) failures.push(`${diagnostics.hiddenTimed} timed visual elements are still hidden`);
   if (Number(diagnostics.contrast) < 4.5) failures.push(`ink/background contrast is ${diagnostics.contrast}:1`);
+  if (diagnostics.aesthetic?.captionOverlap?.length) failures.push(`caption overlaps the focal subject: ${diagnostics.aesthetic.captionOverlap.join(", ")}`);
+  if (diagnostics.aesthetic?.repeatedTitle?.length) failures.push(`scene title is repeated inside the visual: ${diagnostics.aesthetic.repeatedTitle.join(" | ")}`);
+  if (Array.isArray(diagnostics.samples)) {
+    for (const [index, minimum] of [[0, 0.15], [1, 0.45], [2, 0.70]]) {
+      const sample = diagnostics.samples[index];
+      const ratio = Number(sample?.timedTotal) ? Number(sample.visibleTimed) / Number(sample.timedTotal) : 1;
+      if (ratio < minimum) failures.push(`semantic reveals lag narration at ${Math.round(Number(sample?.ratio || 0) * 100)}% (${Math.round(ratio * 100)}% visible)`);
+    }
+  }
+  if (!allowAestheticLow && Number(diagnostics.aesthetic?.score) < 52) failures.push(`aesthetic score is ${diagnostics.aesthetic?.score}/100`);
   if (failures.length) throw new Error(`${sceneId} visual QA failed:\n- ${failures.join("\n- ")}`);
 }
 
@@ -146,6 +157,7 @@ async function renderVariant({ projectRoot, source, verification, baseStory, for
   const frameCount = Math.max(1, Math.ceil(verification.duration * fps));
   const assemblyDir = fs.mkdtempSync(path.join(os.tmpdir(), `video-workflow-${format}-`));
   const cacheRoot = path.join(projectRoot, ".media", "cache", "frames", format);
+  const cacheFormat = variant.render.cacheFormat === "png" ? "png" : "webp";
   fs.mkdirSync(cacheRoot, { recursive: true });
   const templateHash = sha256File(path.join(projectRoot, "index.html"));
   const fingerprints = Object.fromEntries(variant.scenes.map((scene) => [scene.id, sceneFingerprint(projectRoot, variant, scene, format, templateHash)]));
@@ -158,6 +170,7 @@ async function renderVariant({ projectRoot, source, verification, baseStory, for
   let browser;
   const pageErrors = [];
   const qa = [];
+  let coverCandidateReports = [];
   try {
     browser = await puppeteer.launch({ executablePath: browserPath, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage", "--hide-scrollbars"], defaultViewport: { width, height, deviceScaleFactor: 1 } });
     const page = await browser.newPage();
@@ -172,9 +185,13 @@ async function renderVariant({ projectRoot, source, verification, baseStory, for
       let result;
       if (fs.existsSync(qaPath) && !selectedScenes.has(scene.id)) result = readJson(qaPath);
       else {
-        const time = Math.min(scene.start + scene.duration * 0.62, scene.voice.start + Math.max(0.05, scene.voice.duration - 0.12));
-        await page.evaluate(async (seconds) => window.__seekVideo(seconds), time);
-        result = await page.evaluate(() => window.__videoDiagnostics());
+        const samples = [];
+        for (const ratio of [0.38, 0.62, 0.90]) {
+          const time = Math.min(scene.start + scene.duration - 0.04, scene.start + scene.duration * ratio);
+          await page.evaluate(async (seconds) => window.__seekVideo(seconds), time);
+          samples.push({ ratio, ...(await page.evaluate(() => window.__videoDiagnostics())) });
+        }
+        result = { ...samples[1], samples, semanticConsistency: { directedMotion: scene.visual?.direction?.motion || [], visualKind: scene.visual?.model?.kind || scene.layout } };
         writeJson(qaPath, result);
       }
       assertDiagnostics(scene.id, result);
@@ -186,36 +203,40 @@ async function renderVariant({ projectRoot, source, verification, baseStory, for
       const scene = sceneAt(variant, time);
       const cacheDir = path.join(cacheRoot, `${scene.id}-${fingerprints[scene.id]}`);
       const localFrame = Math.max(0, frame - Math.floor(scene.start * fps));
-      const cached = path.join(cacheDir, `frame-${String(localFrame).padStart(6, "0")}.png`);
+      const cached = path.join(cacheDir, `frame-${String(localFrame).padStart(6, "0")}.${cacheFormat}`);
       if (!fs.existsSync(cached)) {
         await page.evaluate(async (seconds) => window.__seekVideo(seconds), time);
-        await page.screenshot({ path: cached, type: "png", omitBackground: false });
+        await page.screenshot({ path: cached, type: cacheFormat, ...(cacheFormat === "webp" ? { quality: 95 } : {}), omitBackground: false });
       }
-      linkOrCopy(cached, path.join(assemblyDir, `frame-${String(frame).padStart(6, "0")}.png`));
+      linkOrCopy(cached, path.join(assemblyDir, `frame-${String(frame).padStart(6, "0")}.${cacheFormat}`));
       if (frame === 0 || frame === frameCount - 1 || frame % Math.max(1, Math.floor(frameCount / 10)) === 0) process.stdout.write(`[${format}] frame ${frame + 1}/${frameCount}\n`);
     }
+    const accessedAt = new Date();
+    for (const scene of variant.scenes) fs.utimesSync(path.join(cacheRoot, `${scene.id}-${fingerprints[scene.id]}`), accessedAt, accessedAt);
     const coverSafe = variant.render.platform?.coverSafeArea || variant.render.platform?.safeArea;
-    const firstScene = variant.scenes[0];
-    // Covers should show the complete first-scene composition, not its early
-    // reveal state. Capture just after narration, within the scene tail.
-    const coverMoment = Math.min(
-      firstScene.start + firstScene.duration - 0.05,
-      firstScene.voice.start + firstScene.voice.duration + 0.03,
-    );
-    await page.evaluate(async ({ seconds, coverSafe: area }) => {
+    await page.evaluate(async (area) => {
       const rootElement = document.getElementById("root");
       rootElement.style.setProperty("--safe-top", `${(area.top || 0.12) * 100}%`);
       rootElement.style.setProperty("--safe-right", `${(area.right || 0.08) * 100}%`);
       rootElement.style.setProperty("--safe-bottom", `${(area.bottom || 0.16) * 100}%`);
       rootElement.style.setProperty("--safe-left", `${(area.left || 0.08) * 100}%`);
-      await window.__seekVideo(seconds);
-    }, { seconds: coverMoment, coverSafe });
-    const coverDiagnostics = await page.evaluate(() => window.__videoDiagnostics());
-    assertDiagnostics("cover", coverDiagnostics, { requireAllRevealed: true });
-    qa.push({ sceneId: "cover", ...coverDiagnostics });
+    }, coverSafe);
     const renderDir = path.join(projectRoot, "renders");
     fs.mkdirSync(renderDir, { recursive: true });
-    await page.screenshot({ path: path.join(renderDir, `cover-${format}.png`), type: "png", omitBackground: false });
+    const coverPlan = readJson(path.join(projectRoot, source.cover?.lockedFile || "cover-plan.locked.json"));
+    const coverCandidates = [];
+    for (const [candidateIndex, candidate] of coverPlan.candidates.entries()) {
+      const coverDiagnostics = await page.evaluate(async (value) => window.__renderCover(value), candidate);
+      assertDiagnostics(`cover ${candidateIndex + 1}`, coverDiagnostics, { requireAllRevealed: true, allowAestheticLow: true });
+      const candidatePath = path.join(renderDir, `cover-${format}-${candidateIndex + 1}.png`);
+      await page.screenshot({ path: candidatePath, type: "png", omitBackground: false });
+      coverCandidates.push({ id: candidate.id, path: candidatePath, diagnostics: coverDiagnostics });
+    }
+    coverCandidates.sort((a, b) => Number(b.diagnostics.aesthetic?.score || 0) - Number(a.diagnostics.aesthetic?.score || 0));
+    coverCandidateReports = coverCandidates.map((candidate) => ({ id: candidate.id, file: path.basename(candidate.path), diagnostics: candidate.diagnostics.aesthetic }));
+    const selectedCover = path.join(renderDir, `cover-${format}.png`);
+    fs.copyFileSync(coverCandidates[0].path, selectedCover);
+    qa.push({ sceneId: "cover", selected: path.basename(coverCandidates[0].path), ...coverCandidates[0].diagnostics });
     if (pageErrors.length) throw new Error(`Browser render errors:\n- ${pageErrors.join("\n- ")}`);
   } finally {
     if (browser) await browser.close();
@@ -229,14 +250,14 @@ async function renderVariant({ projectRoot, source, verification, baseStory, for
   const audioPath = path.join(projectRoot, manifest.mix?.file || manifest.master.file);
   const settings = { draft: { crf: "28", preset: "veryfast" }, medium: { crf: "22", preset: "medium" }, high: { crf: "18", preset: "slow" } }[quality];
   try {
-    run(ffmpegPath(), ["-y", "-v", "error", "-framerate", String(fps), "-start_number", "0", "-i", path.join(assemblyDir, "frame-%06d.png"), "-i", audioPath, "-t", String(verification.duration), "-c:v", "libx264", "-preset", settings.preset, "-crf", settings.crf, "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "1", "-movflags", "+faststart", output], `encode ${format} video`);
+    run(ffmpegPath(), ["-y", "-v", "error", "-framerate", String(fps), "-start_number", "0", "-i", path.join(assemblyDir, `frame-%06d.${cacheFormat}`), "-i", audioPath, "-t", String(verification.duration), "-c:v", "libx264", "-preset", settings.preset, "-crf", settings.crf, "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "1", "-movflags", "+faststart", output], `encode ${format} video`);
   } finally { fs.rmSync(assemblyDir, { recursive: true, force: true }); }
   const { ffmpeg, ffprobe } = mediaBinaries();
   const outputDuration = probeDuration(ffprobe, output);
   if (Math.abs(outputDuration - verification.duration) > Math.max(0.08, 1 / fps + 0.02)) throw new Error(`Rendered duration drift for ${format}: expected ${verification.duration}s, got ${outputDuration}s`);
   const black = run(ffmpeg, ["-hide_banner", "-i", output, "-vf", "blackdetect=d=0.20:pic_th=0.98", "-an", "-f", "null", "-"], `black-frame check for ${format}`);
   if (/black_start:/u.test(black.stderr)) throw new Error(`Black-frame check failed for ${format}`);
-  return { output, cover: path.join(renderDir, `cover-${format}.png`), fps, width, height, frames: frameCount, duration: outputDuration, qa, cache: cacheRoot };
+  return { output, cover: path.join(renderDir, `cover-${format}.png`), coverCandidates: [1, 2, 3].map((index) => path.join(renderDir, `cover-${format}-${index}.png`)).filter((item) => fs.existsSync(item)), coverCandidateReports, fps, width, height, frames: frameCount, duration: outputDuration, qa, cache: cacheRoot, cacheFormat };
 }
 
 function ffmpegPath() { return mediaBinaries().ffmpeg; }
@@ -256,7 +277,23 @@ export async function renderProject(projectArg, { quality = "high", formats: req
   const primary = results.find((result) => result.output.endsWith(`final-${source.project.format}.mp4`)) || results[0];
   const compatibilityOutput = path.join(projectRoot, "renders", "final.mp4");
   fs.copyFileSync(primary.output, compatibilityOutput);
-  const report = { renderer: "chromium-frames", quality, browser: path.basename(browserPath), width: primary.width, height: primary.height, fps: primary.fps, duration: primary.duration, formats: results, verification, localSceneCache: true };
+  const cache = enforceCacheLimit(projectRoot, source.render.cacheMaxMb || 1024);
+  const aesthetic = {
+    schemaVersion: 1,
+    formats: results.map((result) => ({ format: path.basename(result.output).replace(/^final-|\.mp4$/gu, ""), scenes: result.qa.map((item) => ({ sceneId: item.sceneId, score: item.aesthetic?.score || 0, occupancy: item.aesthetic?.occupancy || 0, revealCoverage: item.samples?.length ? Number((item.samples.at(-1).visibleTimed / Math.max(1, item.samples.at(-1).timedTotal)).toFixed(3)) : 1, warnings: [...(item.aesthetic?.duplicateText || []).map((text) => `duplicate:${text}`), ...(item.aesthetic?.repeatedTitle || []).map((text) => `repeated-title:${text}`), ...(item.aesthetic?.captionOverlap || []).map((text) => `caption-overlap:${text}`)] })) })),
+  };
+  writeJson(path.join(projectRoot, "deliverables", "aesthetic-report.json"), aesthetic);
+  writeJson(path.join(projectRoot, "deliverables", "cover-report.json"), {
+    schemaVersion: 1,
+    formats: results.map((result) => ({
+      format: path.basename(result.output).replace(/^final-|\.mp4$/gu, ""),
+      selected: path.basename(result.cover),
+      selectedCandidate: result.qa.find((item) => item.sceneId === "cover")?.selected || null,
+      candidates: result.coverCandidateReports,
+      selectedDiagnostics: result.qa.find((item) => item.sceneId === "cover")?.aesthetic || null,
+    })),
+  });
+  const report = { renderer: "chromium-frames", quality, browser: path.basename(browserPath), width: primary.width, height: primary.height, fps: primary.fps, duration: primary.duration, formats: results, verification, localSceneCache: true, cache: { ...cache, current: cacheStats(projectRoot) }, aestheticReport: "deliverables/aesthetic-report.json" };
   writeJson(path.join(projectRoot, "renders", "render-report.json"), report);
-  return { output: compatibilityOutput, outputs: results.map((result) => result.output), covers: results.map((result) => result.cover), verification, report };
+  return { output: compatibilityOutput, outputs: results.map((result) => result.output), covers: results.map((result) => result.cover), coverCandidates: results.flatMap((result) => result.coverCandidates), verification, report };
 }

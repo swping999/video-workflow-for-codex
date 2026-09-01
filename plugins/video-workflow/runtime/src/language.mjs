@@ -77,6 +77,20 @@ function splitLongExact(value, limit, cjk) {
           break;
         }
       }
+      const minimumTail = cjk ? 4 : 12;
+      if (chars.length - end > 0 && chars.length - end < minimumTail) {
+        const target = Math.max(start + 1, chars.length - minimumTail);
+        let adjusted = target;
+        const orphanLower = Math.max(start + Math.floor(limit * 0.45), start + 1);
+        for (let cursor = target; cursor >= orphanLower; cursor -= 1) {
+          const char = chars[cursor - 1];
+          if ((cjk && /[，、；：,.]/u.test(char)) || (!cjk && /\s/u.test(char))) {
+            adjusted = cursor;
+            break;
+          }
+        }
+        end = adjusted;
+      }
     }
     chunks.push(chars.slice(start, end).join(""));
     start = end;

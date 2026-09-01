@@ -10,7 +10,7 @@
   <a href="examples/public-demo/output/final.mp4"><img src="docs/demo.gif" width="360" alt="由免费本地工作流真实生成的竖版视频"></a>
 </p>
 
-<p align="center"><a href="examples/public-demo/output/final.mp4">播放 16 秒 MP4</a> · <a href="examples/public-demo">查看可复现交付包</a></p>
+<p align="center"><a href="examples/public-demo/output/final.mp4">播放 17 秒 MP4</a> · <a href="examples/public-demo">查看可复现交付包</a></p>
 
 这个 Codex 社区插件可以从一句需求、确认后的逐字稿、结构化内容计划或 CSV/JSON 数据继续完成一套经过验证的完整视频交付。
 
@@ -22,12 +22,14 @@
 一句需求 / 锁定逐字稿 / CSV / JSON / 本地素材
   → 判断内容类型并给出置信度，可识别混合类型
   → 六类内容使用六套结构化视觉语法
-  → 操作系统免费配音和发音词典
-  → 旁白驱动 cue、词级时间、字幕和动画
-  → 可选音乐、音效与自动压低背景音
+  → 语义视觉导演：主体、关系、隐喻、运动和镜头
+  → 连续场景免费配音和发音词典
+  → 旁白驱动 cue、词级时间、字幕和内容动画
+  → 语义音效、可选本地音乐和自动压低背景音
   → 横版、竖版、4:5 按平台重新排版
-  → 事实、音频、时序和视觉质检
-  → MP4 + 封面 + SRT/VTT + 故事板 + 核查清单
+  → 三套独立封面构图并自动评分选优
+  → 事实、音频、时序、视觉和审美质检
+  → MP4 + 封面 + SRT/VTT + 可编辑故事板 + 核查报告
 ```
 
 ## 只说一句话
@@ -40,7 +42,11 @@
 
 需要时，Codex 会先写出完整脚本并锁定，然后选择内容结构、尺寸、平台安全区、主题和语言，再运行确定性的本地生产流程。只有会明显改变事实、身份或结果的歧义才需要确认。
 
-## 1.0 不再只是文字卡片
+## 1.1 不再只是文字卡片和入场动画
+
+每个场景都会锁定一份视觉导演计划，明确焦点、主体与关系、视觉隐喻、语义运动、镜头意图和构图占比。机制会组装和变化，流程会沿路径推进，图表按真实数值生长，对比从两侧进入，循环会真正表现回到起点。
+
+声音默认按整场连续合成，减少句子拼接感；还支持用户选择的本地配音适配器、语义提示音，以及 `full` 模式下完全本地生成的背景氛围。封面会单独生成三种构图再检查碰撞与占比。故事板编辑器可以只改画面并只让受影响的场景失效重渲染。
 
 | 类型 | 专属结构和正确性规则 |
 | --- | --- |
@@ -74,7 +80,7 @@
 
 ## 完全免费、本地核心
 
-- **配音：**macOS `say`、Windows `System.Speech`、Linux 免费 `espeak-ng`。
+- **配音：**连续使用 macOS `say`、Windows `System.Speech`、Linux 免费 `espeak-ng`；也可通过明确的本地可执行适配器接入其他本地语音引擎。
 - **画面：**响应式 HTML/CSS/SVG 图解、排版、本地图片/SVG/视频/截图和 GSAP 动画。
 - **音视频：**锁定版本的 FFmpeg、ffprobe，加电脑已有的 Chrome/Chromium/Edge。
 - **账号：**不需要媒体 API、云配音、生图账号或外部渲染服务。
@@ -99,11 +105,12 @@
 - 旁白、画面字幕、SRT、VTT 必须完整还原同一份锁定文案。
 - 场景时长来自真实音频，动画必须在对应口播结束前完成。
 - 逐句动态均衡，最终混音目标约 -16 LUFS、峰值约 -1.5 dBTP。
+- 语义提示音本地生成；`full` 声音模式还会生成背景氛围，并在人声出现时自动压低。
 - 真数据图必须有有限数值和来源；否则只能明确标注为趋势示意。
 - 数据场景里说出的数字必须存在于图表标签或数值中。
 - 对比必须有两个对象和同一组维度。
 - 推广里的指标、评价和能力声明必须已核实并关联来源。
-- 自动检查路径、素材缺失、文字溢出、平台安全区、对比度、cue 顺序、空白、响度、峰值、黑帧和成片时长。
+- 自动检查路径、素材缺失、文字溢出、平台安全区、对比度、构图占比、重复信息、封面/主体/字幕碰撞、cue 顺序、空白、响度、峰值、黑帧和成片时长。
 - 视觉回归覆盖 6 类型 × 3 画幅 × 4 主题，共 72 种组合。
 
 ## 安装
@@ -134,6 +141,7 @@ $PLUGIN/scripts/video-workflow build \
   --formats landscape,portrait,social \
   --platform douyin \
   --theme editorial \
+  --sound-design subtle \
   --language auto \
   --quality high
 ```
@@ -148,7 +156,8 @@ $PLUGIN/scripts/video-workflow build \
 # 自己有权使用的配音
 video-workflow create ...
 video-workflow export --project /绝对路径/project
-# 按导出的 cue ID 把音频放到 .media/raw-cues/
+# 优先按场景 ID 把连续音频放进 .media/raw-scenes/；
+# 仍兼容按 cue ID 放进 .media/raw-cues/。
 video-workflow synthesize --project /绝对路径/project --provider files
 video-workflow process-audio --project /绝对路径/project
 video-workflow verify --project /绝对路径/project
@@ -157,8 +166,12 @@ video-workflow verify --project /绝对路径/project
 video-workflow revise --project /绝对路径/project --script /绝对路径/revised-script.txt
 
 # 只预览或重渲染第 2、4 个场景，其余场景复用缓存
+video-workflow storyboard --project /绝对路径/project
+video-workflow apply-storyboard --project /绝对路径/project --patch /绝对路径/storyboard.patch.json
 video-workflow preview --project /绝对路径/project --scenes 2,4
 video-workflow render --project /绝对路径/project --scenes 2,4 --formats landscape,portrait,social
+video-workflow cache-info --project /绝对路径/project
+video-workflow clean-cache --project /绝对路径/project
 ```
 
 ## 交付文件
@@ -167,14 +180,16 @@ video-workflow render --project /绝对路径/project --scenes 2,4 --formats lan
 | --- | --- |
 | `script.locked.txt` | 旁白与字幕唯一逐字稿 |
 | `content-plan.locked.json` | 结构化画面、数据、来源、声明、品牌和素材 |
+| `direction-plan.locked.json` / `sound-plan.locked.json` / `cover-plan.locked.json` | 可复现的视觉导演、声音和封面决策 |
 | `story-source.json` | 带哈希的工程源数据 |
 | `assets/audio-master.wav` | 人声加可选音乐/音效的最终标准化混音 |
 | `assets/voice-manifest.json` | cue、主音轨和混音的哈希、时长、响度、峰值 |
 | `deliverables/captions.srt` / `.vtt` | 同源字幕 |
 | `deliverables/word-timestamps.json` | 提供或估算的词级时间 |
-| `deliverables/storyboard.html` / `.json` | 可预览与机器可读故事板 |
+| `deliverables/storyboard.html` / `storyboard-editor.html` / `.json` | 预览、画面编辑与机器可读故事板 |
+| `deliverables/aesthetic-report.json` / `cover-report.json` | 关键帧和封面构图质检 |
 | `deliverables/fact-check.md` / `.json` | 来源、声明和图表核查 |
-| `renders/cover-<format>.png` | 平台安全区封面 |
+| `renders/cover-<format>-1..3.png` / `cover-<format>.png` | 三套候选和自动选出的平台安全区封面 |
 | `renders/final-<format>.mp4` | 各尺寸成片 |
 | `renders/final.mp4` | 主尺寸兼容输出 |
 

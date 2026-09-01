@@ -24,7 +24,7 @@ export function reviseProject(projectArg, { scriptPath, planPath = null, dataPat
   const stamp = new Date().toISOString().replace(/[:.]/gu, "-");
   const archive = path.join(projectRoot, "revisions", `${String(revision).padStart(4, "0")}-${stamp}`);
   fs.mkdirSync(archive, { recursive: true });
-  for (const relative of ["script.locked.txt", "brief.locked.txt", "content-plan.locked.json", "story-source.json", "story.js", "meta.json", "PROJECT.md", "index.html", "assets", ".media", "deliverables", "renders"]) {
+  for (const relative of ["script.locked.txt", "brief.locked.txt", "content-plan.locked.json", "direction-plan.locked.json", "sound-plan.locked.json", "cover-plan.locked.json", "story-source.json", "story.js", "meta.json", "PROJECT.md", "index.html", "assets", ".media", "deliverables", "renders"]) {
     copyIfExists(path.join(projectRoot, relative), path.join(archive, relative));
   }
 
@@ -61,8 +61,11 @@ export function reviseProject(projectArg, { scriptPath, planPath = null, dataPat
       musicPath: musicFile,
       sfxManifestPath,
       pronunciationPath,
+      soundDesign: source.audio.soundDesign || "subtle",
+      continuousNarration: source.audio.continuousNarration !== false,
+      cacheMaxMb: source.render.cacheMaxMb || 1024,
     });
-    for (const relative of ["script.locked.txt", "brief.locked.txt", "content-plan.locked.json", "story-source.json", "story.js", "meta.json", "PROJECT.md", "index.html", "assets", ".media", "deliverables", "renders"]) {
+    for (const relative of ["script.locked.txt", "brief.locked.txt", "content-plan.locked.json", "direction-plan.locked.json", "sound-plan.locked.json", "cover-plan.locked.json", "story-source.json", "story.js", "meta.json", "PROJECT.md", "index.html", "assets", ".media", "deliverables", "renders"]) {
       const destination = path.join(projectRoot, relative);
       if (fs.existsSync(destination)) fs.rmSync(destination, { recursive: true, force: true });
       copyIfExists(path.join(temporaryProject, relative), destination);

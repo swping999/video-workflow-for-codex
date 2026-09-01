@@ -10,6 +10,8 @@ import { exportJobs } from "../plugins/video-workflow/runtime/src/export-jobs.mj
 import { validateLockedSource } from "../plugins/video-workflow/runtime/src/source.mjs";
 import { synthesizeProject } from "../plugins/video-workflow/runtime/src/tts.mjs";
 import { reviseProject } from "../plugins/video-workflow/runtime/src/revision.mjs";
+import { applyStoryboardPatch } from "../plugins/video-workflow/runtime/src/storyboard-editor.mjs";
+import { cacheStats, cleanCache } from "../plugins/video-workflow/runtime/src/cache.mjs";
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "video-workflow-test-"));
@@ -27,6 +29,10 @@ test("create locks copy and splits paragraphs into scenes", () => {
   assert.equal(result.source.audio.provider, "system");
   assert.equal(result.source.render.renderer, "chromium-frames");
   assert.equal(result.source.copy.subtitlePolicy, "verbatim");
+  assert.equal(result.source.schemaVersion, 4);
+  assert.ok(result.source.scenes.every((scene) => scene.visual.direction.focus && scene.visual.direction.motion.length));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(item.project, "cover-plan.locked.json"), "utf8")).candidates.length, 3);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(item.project, "sound-plan.locked.json"), "utf8")).mode, "subtle");
   assert.equal(validateLockedSource(item.project).source.project.slug, "test-episode");
 });
 
@@ -38,6 +44,18 @@ test("one-sentence brief provenance is locked beside the generated script", () =
   assert.equal(result.source.brief.status, "locked");
   assert.equal(fs.readFileSync(path.join(item.project, "brief.locked.txt"), "utf8").trim(), brief);
   assert.equal(validateLockedSource(item.project).source.brief.lockedFile, "brief.locked.txt");
+});
+
+test("cover title uses the complete first sentence instead of a subtitle fragment", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "video-workflow-title-"));
+  const script = path.join(root, "script.txt");
+  const sentence = "为什么做视频时，字幕和旁白总是越到后面越对不上？";
+  fs.writeFileSync(script, `${sentence}\n\n第二幕解释原因。\n`);
+  const project = path.join(root, "episode");
+  const result = createProject({ scriptPath: script, outputDir: project, slug: "complete-title", format: "portrait" });
+  assert.equal(result.source.project.title, sentence);
+  const coverPlan = JSON.parse(fs.readFileSync(path.join(project, "cover-plan.locked.json"), "utf8"));
+  assert.equal(coverPlan.candidates[0].headline, sentence);
 });
 
 test("brief provenance rejects a changed request", () => {
@@ -104,6 +122,8 @@ test("export keeps voice text and image jobs deterministic", () => {
   createProject({ scriptPath: item.script, outputDir: item.project, slug: "test-episode" });
   const exported = exportJobs(item.project);
   assert.equal(exported.audioRequest.items.length, 3);
+  assert.equal(exported.audioRequest.scenes.length, 2);
+  assert.equal(exported.audioRequest.continuousNarration, true);
   assert.equal(exported.audioRequest.items[1].text, "第二幕解释原因！");
   assert.equal(exported.imageRequest.items.length, 2);
   assert.match(exported.imageRequest.items[0].prompt, /Do not include a presenter/u);
@@ -123,6 +143,19 @@ test("runtime rejects cloud speech providers before making any request", async (
   createProject({ scriptPath: item.script, outputDir: item.project, slug: "free-core" });
   exportJobs(item.project);
   await assert.rejects(() => synthesizeProject(item.project, { provider: "cloud" }), /free core never calls a cloud speech API/u);
+});
+
+test("explicit local TTS adapters receive continuous scene jobs", async () => {
+  const item = fixture();
+  createProject({ scriptPath: item.script, outputDir: item.project, slug: "local-adapter" });
+  exportJobs(item.project);
+  const adapter = path.join(item.root, "adapter.sh");
+  fs.writeFileSync(adapter, "#!/bin/sh\noutput=''\nwhile [ $# -gt 0 ]; do\n  if [ \"$1\" = '--output' ]; then shift; output=$1; fi\n  shift\ndone\nprintf 'RIFF' > \"$output\"\n");
+  fs.chmodSync(adapter, 0o755);
+  const result = await synthesizeProject(item.project, { provider: "adapter", adapter });
+  assert.equal(result.continuousNarration, true);
+  assert.equal(result.generated, 2);
+  assert.ok(fs.existsSync(path.join(item.project, ".media", "raw-scenes", "scene-01.wav")));
 });
 
 test("project-owned paths cannot escape the project directory", () => {
@@ -177,6 +210,10 @@ test("language detection and cue splitting preserve exact locked text", () => {
   assert.equal(detectLanguage("这是中文视频。"), "zh-CN");
   const text = "This is a deliberately long sentence that needs a safe subtitle break while preserving every character exactly.";
   assert.equal(splitSubtitleCues(text, "en-US").join(""), text);
+  const chinese = "为什么做视频时，字幕和旁白总是越到后面越对不上？";
+  const chineseCues = splitSubtitleCues(chinese, "zh-CN");
+  assert.equal(chineseCues.join(""), chinese);
+  assert.ok([...chineseCues.at(-1)].length >= 4);
 });
 
 test("locked content plan tampering is rejected", () => {
@@ -184,6 +221,41 @@ test("locked content plan tampering is rejected", () => {
   createProject({ scriptPath: item.script, outputDir: item.project, slug: "plan-lock" });
   fs.appendFileSync(path.join(item.project, "content-plan.locked.json"), " ");
   assert.throws(() => validateLockedSource(item.project), /content-plan hash differs/u);
+});
+
+test("locked direction plan tampering is rejected", () => {
+  const item = fixture();
+  createProject({ scriptPath: item.script, outputDir: item.project, slug: "direction-lock" });
+  fs.appendFileSync(path.join(item.project, "direction-plan.locked.json"), " ");
+  assert.throws(() => validateLockedSource(item.project), /direction plan hash differs/u);
+});
+
+test("storyboard patches update only visual state and invalidate selected cache", () => {
+  const item = fixture();
+  createProject({ scriptPath: item.script, outputDir: item.project, slug: "visual-patch" });
+  const cache = path.join(item.project, ".media", "cache", "frames", "portrait", "scene-01-old");
+  fs.mkdirSync(cache, { recursive: true });
+  fs.writeFileSync(path.join(cache, "frame-000000.webp"), "cache");
+  const patch = path.join(item.root, "storyboard.patch.json");
+  fs.writeFileSync(patch, `${JSON.stringify({ schemaVersion: 1, project: "visual-patch", scenes: [{ sceneId: "scene-01", title: "新的视觉标题", layout: "timeline", captionPosition: "top", visual: { kind: "timeline", nodes: [{ id: "a", label: "开始" }, { id: "b", label: "完成" }] } }] }, null, 2)}\n`);
+  const result = applyStoryboardPatch(item.project, patch);
+  const source = validateLockedSource(item.project).source;
+  assert.deepEqual(result.changed, ["scene-01"]);
+  assert.equal(source.scenes[0].title, "新的视觉标题");
+  assert.equal(source.scenes[0].visual.captionPosition, "top");
+  assert.equal(fs.existsSync(cache), false);
+});
+
+test("cache inspection and cleanup stay scoped to the project", () => {
+  const item = fixture();
+  createProject({ scriptPath: item.script, outputDir: item.project, slug: "cache-tools" });
+  const file = path.join(item.project, ".media", "cache", "frames", "portrait", "scene", "frame.webp");
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, "cached frame");
+  assert.equal(cacheStats(item.project).files, 1);
+  const cleaned = cleanCache(item.project);
+  assert.equal(cleaned.removedFiles, 1);
+  assert.equal(cacheStats(item.project).files, 0);
 });
 
 test("revision archives the previous locked version in the same project", () => {

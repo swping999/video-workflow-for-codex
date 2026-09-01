@@ -75,22 +75,48 @@ function synthesizeSystem({ text, output, voice, language, speed }) {
   run(espeak, ["-v", selectedVoice, "-s", String(Math.max(80, Math.round(175 * speed))), "-w", output, text], "system TTS");
 }
 
-export async function synthesizeProject(projectArg, { provider: providerArg = null, overwrite = false } = {}) {
+function synthesizeAdapter({ adapterPath, text, output, voice, language, prosody }) {
+  if (!adapterPath) throw new Error("Narration provider adapter requires --adapter /absolute/executable or VIDEO_WORKFLOW_TTS_ADAPTER");
+  const resolved = path.resolve(adapterPath);
+  try { fs.accessSync(resolved, fs.constants.X_OK); } catch { throw new Error(`TTS adapter is not executable: ${resolved}`); }
+  const textFile = `${output}.txt`;
+  fs.mkdirSync(path.dirname(output), { recursive: true });
+  fs.writeFileSync(textFile, text);
+  try {
+    run(resolved, [
+      "--text-file", textFile,
+      "--output", output,
+      "--language", String(language || "auto"),
+      "--voice", String(voice || "auto"),
+      "--rate", String(Number(prosody?.rate || 1)),
+      "--pitch", String(Number(prosody?.pitch || 0)),
+      "--emphasis", String(prosody?.emphasis || "moderate"),
+    ], "local TTS adapter");
+  } finally {
+    fs.rmSync(textFile, { force: true });
+  }
+  if (!fs.existsSync(output)) throw new Error(`TTS adapter did not create output: ${output}`);
+}
+
+export async function synthesizeProject(projectArg, { provider: providerArg = null, overwrite = false, adapter: adapterArg = null } = {}) {
   const project = validateLockedSource(projectArg);
   const { projectRoot, source } = project;
   const requestPath = path.join(projectRoot, ".media", "audio-request.json");
   if (!fs.existsSync(requestPath)) throw new Error("Missing .media/audio-request.json; run export first");
   const request = readJson(requestPath);
   const provider = providerArg || source.audio.provider || "system";
-  if (!["system", "files"].includes(provider)) throw new Error("Narration provider must be system or files; the free core never calls a cloud speech API");
+  if (!["system", "files", "adapter"].includes(provider)) throw new Error("Narration provider must be system, files, or adapter; the free core never calls a cloud speech API");
   if (provider === "files") return { provider, generated: 0, skipped: request.items.length };
-  if (!systemProviderAvailable()) throw new Error("No free operating-system TTS is available; install espeak-ng on Linux or use provider=files");
+  if (provider === "system" && !systemProviderAvailable()) throw new Error("No free operating-system TTS is available; install espeak-ng on Linux or use provider=files");
 
-  const rawDir = path.join(projectRoot, ".media", "raw-cues");
+  const useContinuous = Boolean(request.continuousNarration && request.scenes?.length);
+  const rawDir = path.join(projectRoot, useContinuous ? ".media/raw-scenes" : ".media/raw-cues");
   fs.mkdirSync(rawDir, { recursive: true });
   let generated = 0;
   let skipped = 0;
-  for (const item of request.items) {
+  const jobs = useContinuous ? request.scenes : request.items;
+  const adapterPath = adapterArg || process.env.VIDEO_WORKFLOW_TTS_ADAPTER || null;
+  for (const item of jobs) {
     const existing = ["wav", "flac", "mp3", "m4a", "aac"].map((extension) => path.join(rawDir, `${item.id}.${extension}`)).find((candidate) => fs.existsSync(candidate));
     if (existing && !overwrite) {
       skipped += 1;
@@ -98,14 +124,17 @@ export async function synthesizeProject(projectArg, { provider: providerArg = nu
     }
     if (existing && overwrite) fs.unlinkSync(existing);
     const outputBase = path.join(rawDir, item.id);
-    synthesizeSystem({
+    const parameters = {
       text: item.ttsText,
       output: `${outputBase}.wav`,
       voice: item.voice || request.voice,
       language: item.language || request.language,
       speed: Number(item.prosody?.rate || request.prosody?.rate || request.speed),
-    });
+      prosody: item.prosody || request.prosody,
+    };
+    if (provider === "adapter") synthesizeAdapter({ ...parameters, adapterPath });
+    else synthesizeSystem(parameters);
     generated += 1;
   }
-  return { provider, generated, skipped, rawDir, platform: `${os.platform()}-${os.arch()}` };
+  return { provider, generated, skipped, rawDir, continuousNarration: useContinuous, platform: `${os.platform()}-${os.arch()}` };
 }

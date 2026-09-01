@@ -10,7 +10,7 @@ Versioned revisions may contain prior scripts and local media under an episode's
 
 ## Voice and likeness
 
-Only use a voice recording when you have the speaker's authorization. Only use a person's likeness when you have permission to do so. The workflow accepts authorized local audio files but does not bundle a cloning model, biometric reference, paid-service adapter, or cloud credential.
+Only use a voice recording when you have the speaker's authorization. Only use a person's likeness when you have permission to do so. The workflow accepts authorized local audio files and an explicitly selected local executable TTS adapter, but does not bundle a cloning model, biometric reference, paid-service adapter, or cloud credential. The adapter path is never discovered from a remote URL and is executed without a shell.
 
 ## Reporting a vulnerability
 

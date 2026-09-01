@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "title": "为什么做视频时，字幕和旁白总是越到后面越对不上？",
+  "type": "explainer",
+  "strategy": "semantic-subject-relation-motion-focus",
+  "scenes": [
+    {
+      "sceneId": "scene-01",
+      "kind": "hero",
+      "focus": "同一份逐字稿",
+      "subjects": [
+        "同一份逐字稿",
+        "真实音频时长",
+        "交付前校验"
+      ],
+      "relations": [
+        {
+          "from": "同一份逐字稿",
+          "to": "真实音频时长",
+          "label": "leads-to"
+        },
+        {
+          "from": "真实音频时长",
+          "to": "交付前校验",
+          "label": "leads-to"
+        }
+      ],
+      "metaphor": "timeline-sync",
+      "symbol": "◴",
+      "motion": [
+        "focus",
+        "reveal",
+        "accent"
+      ],
+      "beats": [
+        {
+          "id": "beat-1",
+          "action": "focus",
+          "subject": "同一份逐字稿",
+          "emphasis": "primary"
+        },
+        {
+          "id": "beat-2",
+          "action": "reveal",
+          "subject": "真实音频时长",
+          "emphasis": "supporting"
+        },
+        {
+          "id": "beat-3",
+          "action": "accent",
+          "subject": "交付前校验",
+          "emphasis": "supporting"
+        }
+      ],
+      "camera": {
+        "shot": "hero-wide",
+        "movement": "gentle-push",
+        "focus": "同一份逐字稿"
+      },
+      "composition": {
+        "anchor": "center",
+        "occupancyTarget": 0.64,
+        "depth": "foreground-subject/supporting-context"
+      },
+      "hook": {
+        "promise": "为什么做视频时，字幕和旁白总是越到后面越对不上",
+        "tension": "同一份逐字稿 → 真实音频时长",
+        "targetSeconds": 3
+      }
+    },
+    {
+      "sceneId": "scene-02",
+      "kind": "cause-effect",
+      "focus": "三份内容各自修改",
+      "subjects": [
+        "三份内容各自修改",
+        "字幕逐渐错位"
+      ],
+      "relations": [
+        {
+          "from": "三份内容各自修改",
+          "to": "字幕逐渐错位",
+          "label": "导致"
+        }
+      ],
+      "metaphor": "timeline-sync",
+      "symbol": "◴",
+      "motion": [
+        "trace",
+        "flow",
+        "highlight"
+      ],
+      "beats": [
+        {
+          "id": "beat-1",
+          "action": "trace",
+          "subject": "三份内容各自修改",
+          "emphasis": "primary"
+        },
+        {
+          "id": "beat-2",
+          "action": "flow",
+          "subject": "字幕逐渐错位",
+          "emphasis": "supporting"
+        },
+        {
+          "id": "beat-3",
+          "action": "highlight",
+          "subject": "字幕逐渐错位",
+          "emphasis": "supporting"
+        }
+      ],
+      "camera": {
+        "shot": "diagram-medium",
+        "movement": "follow-path",
+        "focus": "三份内容各自修改"
+      },
+      "composition": {
+        "anchor": "left",
+        "occupancyTarget": 0.64,
+        "depth": "foreground-subject/supporting-context"
+      },
+      "hook": null
+    },
+    {
+      "sceneId": "scene-03",
+      "kind": "summary",
+      "focus": "锁定文案",
+      "subjects": [
+        "锁定文案",
+        "测量音频",
+        "验证字幕"
+      ],
+      "relations": [
+        {
+          "from": "锁定文案",
+          "to": "测量音频",
+          "label": "leads-to"
+        },
+        {
+          "from": "测量音频",
+          "to": "验证字幕",
+          "label": "leads-to"
+        }
+      ],
+      "metaphor": "timeline-sync",
+      "symbol": "◴",
+      "motion": [
+        "gather",
+        "highlight"
+      ],
+      "beats": [
+        {
+          "id": "beat-1",
+          "action": "gather",
+          "subject": "锁定文案",
+          "emphasis": "primary"
+        },
+        {
+          "id": "beat-2",
+          "action": "highlight",
+          "subject": "测量音频",
+          "emphasis": "supporting"
+        }
+      ],
+      "camera": {
+        "shot": "summary-wide",
+        "movement": "gentle-push",
+        "focus": "锁定文案"
+      },
+      "composition": {
+        "anchor": "center",
+        "occupancyTarget": 0.64,
+        "depth": "foreground-subject/supporting-context"
+      },
+      "hook": null
+    }
+  ]
+}

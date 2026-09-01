@@ -34,7 +34,7 @@ assert.ok(verified.duration > 1);
 
 const storyPath = path.join(project, "story.js");
 const originalStory = fs.readFileSync(storyPath, "utf8");
-fs.writeFileSync(storyPath, originalStory.replace("字幕和旁白应该来自同一份文案。", "字幕已经被错误改写。"));
+fs.writeFileSync(storyPath, originalStory.replace("真实音频决定场景时长。", "字幕已经被错误改写。"));
 assert.throws(() => verifyProject(project), /captions differ from locked narration/u);
 fs.writeFileSync(storyPath, originalStory);
 

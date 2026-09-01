@@ -9,4 +9,4 @@ Runtime packages are installed from npm and retain their own licenses:
 
 FFmpeg licensing varies with the selected binary build and enabled components. Users who replace the installer binary are responsible for checking their chosen build.
 
-Operating-system speech engines are invoked locally and are not redistributed. User-supplied audio remains subject to its own rights and terms. This repository does not redistribute voice models, personal voice samples, identity photographs, generated episodes, or cloud credentials.
+Operating-system speech engines and any explicitly configured local TTS adapter are invoked locally and are not redistributed. Procedural sound effects and optional background beds are synthesized at runtime with the bundled FFmpeg build. User-supplied audio remains subject to its own rights and terms. This repository does not redistribute voice models, personal voice samples, identity photographs, generated episodes, or cloud credentials.

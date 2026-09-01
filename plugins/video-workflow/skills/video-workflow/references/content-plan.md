@@ -2,6 +2,24 @@
 
 Use `schemaVersion: 1`. The number of `scenes` must equal the number of blank-line-separated script paragraphs. A scene may omit visual details and use the type default; if it supplies `narration`, that text must exactly equal the locked paragraph.
 
+Every scene may also set `captionPosition` (`bottom`, `top`, `left`, or `right`) and optional director intent. The runtime fills missing direction fields from the visual semantics:
+
+```json
+{
+  "captionPosition": "top",
+  "direction": {
+    "focus": "water molecule",
+    "metaphor": "molecular-assembly",
+    "symbol": "H₂O",
+    "motion": ["assemble", "transform", "pulse"],
+    "camera": {"shot": "diagram-medium", "movement": "follow-path"},
+    "composition": {"anchor": "center", "occupancyTarget": 0.68}
+  }
+}
+```
+
+Use direction only to clarify the visual explanation. Do not repeat narration as decorative labels.
+
 ## Shared fields
 
 ```json

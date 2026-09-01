@@ -36,6 +36,8 @@ export function verifyProject(projectArg) {
     }
     if (scene.layout !== sceneSource.layout) failures.push(`${scene.id}: scene layout differs from source`);
     if (JSON.stringify(scene.visual?.model) !== JSON.stringify(sceneSource.visual?.model)) failures.push(`${scene.id}: structured visual model differs from source`);
+    if (source.schemaVersion >= 4 && JSON.stringify(scene.visual?.direction) !== JSON.stringify(sceneSource.visual?.direction)) failures.push(`${scene.id}: visual direction differs from source`);
+    if (source.schemaVersion >= 4 && scene.visual?.captionPosition !== sceneSource.visual?.captionPosition) failures.push(`${scene.id}: caption position differs from source`);
     if (scene.voice.cues.map((cue) => cue.text).join("") !== spokenText(sceneSource)) {
       failures.push(`${scene.id}: captions differ from locked narration`);
     }
@@ -105,7 +107,7 @@ export function verifyProject(projectArg) {
     }
   }
 
-  for (const file of ["captions.srt", "captions.vtt", "word-timestamps.json", "storyboard.json", "storyboard.html", "fact-check.json", "fact-check.md"]) {
+  for (const file of ["captions.srt", "captions.vtt", "word-timestamps.json", "storyboard.json", "storyboard.html", "storyboard-editor.html", "direction-plan.json", "sound-plan.json", "cover-plan.json", "fact-check.json", "fact-check.md"]) {
     if (!fs.existsSync(path.join(projectRoot, "deliverables", file))) failures.push(`deliverable is missing: ${file}`);
   }
   const wordFile = path.join(projectRoot, "deliverables", "word-timestamps.json");
@@ -120,6 +122,8 @@ export function verifyProject(projectArg) {
   if (html.includes("scene.caption")) failures.push("template contains a second caption source");
   if (html.includes("34+(i*19)%58")) failures.push("template still contains fake chart heights");
   if (!html.includes("window.__videoDiagnostics")) failures.push("template visual diagnostics are missing");
+  if (source.schemaVersion >= 4 && !html.includes("window.__renderCover")) failures.push("independent cover renderer is missing");
+  if (source.schemaVersion >= 4 && !html.includes("animateSemantic")) failures.push("semantic animation engine is missing");
   const compositionDuration = Number.parseFloat(html.match(/data-duration="([0-9.]+)"/u)?.[1]);
   const compositionWidth = Number.parseInt(html.match(/data-width="([0-9.]+)"/u)?.[1], 10);
   const compositionHeight = Number.parseInt(html.match(/data-height="([0-9.]+)"/u)?.[1], 10);

@@ -18,7 +18,8 @@ plugins/video-workflow/scripts/video-workflow build \
   --platform douyin \
   --theme editorial \
   --language zh-CN \
+  --sound-design subtle \
   --quality draft
 ```
 
-The curated `output/` folder shows the resulting compatibility MP4, cover, exact subtitles, storyboard, and fact-check report. Audio intermediates are excluded to keep the repository small; rebuilding regenerates them locally.
+The curated `output/` folder shows the resulting compatibility MP4, selected independent cover, exact subtitles, structured and editable storyboard, locked direction/sound/cover plans, aesthetic diagnostics, and fact-check report. Audio intermediates and alternate cover PNGs are excluded to keep the repository small; rebuilding regenerates them locally.

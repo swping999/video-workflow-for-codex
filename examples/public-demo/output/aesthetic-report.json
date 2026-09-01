@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "formats": [
+    {
+      "format": "portrait",
+      "scenes": [
+        {
+          "sceneId": "scene-01",
+          "score": 81,
+          "occupancy": 0.847,
+          "revealCoverage": 1,
+          "warnings": []
+        },
+        {
+          "sceneId": "scene-02",
+          "score": 85,
+          "occupancy": 0.847,
+          "revealCoverage": 1,
+          "warnings": []
+        },
+        {
+          "sceneId": "scene-03",
+          "score": 82,
+          "occupancy": 0.847,
+          "revealCoverage": 1,
+          "warnings": []
+        },
+        {
+          "sceneId": "cover",
+          "score": 81,
+          "occupancy": 0.934,
+          "revealCoverage": 1,
+          "warnings": []
+        }
+      ]
+    }
+  ]
+}

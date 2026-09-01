@@ -203,7 +203,16 @@ export function buildContentPlan({ scriptText, paragraphs, requestedType = "auto
     if (sceneType === "data-story" && (supplied.chart || (index === 1 ? chartData : null))) model = normalizeChart(supplied.chart || chartData, sources);
     if (sceneType === "promo" && model.kind === "cta" && brand.cta) model = { ...model, cta: brand.cta };
     if (model.kind && !["hero", "summary", ...Object.values(visualKinds).flat()].includes(model.kind)) throw new Error(`Unsupported visual kind in scene ${index + 1}: ${model.kind}`);
-    return { contentType: sceneType, title: supplied.title || String(paragraph).replace(/[。！？?!；;：:]$/u, ""), chapter: supplied.chapter || null, visual: model, asset: supplied.asset || model.asset || null, icon: supplied.icon || null };
+    return {
+      contentType: sceneType,
+      title: supplied.title || String(paragraph).replace(/[。！？?!；;：:]$/u, ""),
+      chapter: supplied.chapter || null,
+      visual: model,
+      direction: supplied.direction || null,
+      captionPosition: ["bottom", "top", "left", "right"].includes(supplied.captionPosition) ? supplied.captionPosition : "bottom",
+      asset: supplied.asset || model.asset || null,
+      icon: supplied.icon || null,
+    };
   });
   const claims = Array.isArray(raw.claims) ? raw.claims.map((claim, index) => ({ id: claim.id || `claim-${index + 1}`, text: String(claim.text || ""), sourceId: claim.sourceId || null, verified: Boolean(claim.verified), kind: claim.kind || "fact" })) : [];
   for (const claim of claims) {

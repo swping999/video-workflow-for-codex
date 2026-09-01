@@ -71,6 +71,20 @@
           "narration": {"type": "string"},
           "title": {"type": "string"},
           "chapter": {"type": "string"},
+          "captionPosition": {"enum": ["bottom", "top", "left", "right"]},
+          "direction": {
+            "type": "object",
+            "properties": {
+              "focus": {"type": "string"},
+              "metaphor": {"type": "string"},
+              "symbol": {"type": "string"},
+              "motion": {"type": "array", "items": {"type": "string"}},
+              "beats": {"type": "array", "items": {"type": "object"}},
+              "camera": {"type": "object"},
+              "composition": {"type": "object"},
+              "hook": {"type": "object"}
+            }
+          },
           "type": {"enum": ["explainer", "listicle", "workflow", "comparison", "promo", "data-story"]},
           "asset": {"type": ["string", "null"]},
           "icon": {"type": ["string", "null"]},

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "strategy": "independent-cover-composition",
+  "formatSafeArea": {
+    "top": 0.18,
+    "right": 0.1,
+    "bottom": 0.22,
+    "left": 0.1
+  },
+  "candidates": [
+    {
+      "id": "cover-1",
+      "layout": "editorial-split",
+      "headline": "为什么做视频时，字幕和旁白总是越到后面越对不上？",
+      "subtitle": "同一份逐字稿 → 真实音频时长",
+      "symbol": "◴",
+      "visualMetaphor": "timeline-sync",
+      "eyebrow": "EXPLAINER",
+      "accent": "primary",
+      "occupancyTarget": 0.68
+    },
+    {
+      "id": "cover-2",
+      "layout": "symbol-center",
+      "headline": "为什么做视频时，字幕和旁白总是越到后面越对不上？",
+      "subtitle": "同一份逐字稿 → 真实音频时长",
+      "symbol": "◴",
+      "visualMetaphor": "timeline-sync",
+      "eyebrow": "VISUAL EXPLAINER",
+      "accent": "secondary",
+      "occupancyTarget": 0.62
+    },
+    {
+      "id": "cover-3",
+      "layout": "diagonal-story",
+      "headline": "为什么做视频时，字幕和旁白总是越到后面越对不上？",
+      "subtitle": "同一份逐字稿 → 真实音频时长",
+      "symbol": "◴",
+      "visualMetaphor": "timeline-sync",
+      "eyebrow": "WATCH IN 30 SECONDS",
+      "accent": "primary",
+      "occupancyTarget": 0.72
+    }
+  ]
+}

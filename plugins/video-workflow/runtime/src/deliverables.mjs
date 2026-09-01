@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { timingTokens } from "./language.mjs";
-import { writeJson } from "./utils.mjs";
+import { readJson, writeJson } from "./utils.mjs";
+import { storyboardEditorHtml } from "./storyboard-editor.mjs";
 
 function clock(seconds, decimal = ",") {
   const milliseconds = Math.max(0, Math.round(Number(seconds) * 1000));
@@ -44,15 +45,6 @@ function subtitleEntries(story) {
   return entries;
 }
 
-function storyboardHtml(source, story) {
-  const cards = story.scenes.map((scene, index) => `<article><div class="number">${String(index + 1).padStart(2, "0")}</div><div><b>${escapeHtml(scene.title)}</b><small>${escapeHtml(scene.layout)} · ${scene.duration.toFixed(2)}s</small><p>${scene.voice.cues.map((cue) => escapeHtml(cue.text)).join(" ")}</p></div></article>`).join("");
-  return `<!doctype html><html lang="${escapeHtml(source.copy.language)}"><meta charset="utf-8"><title>${escapeHtml(source.project.title)} Storyboard</title><style>body{max-width:1100px;margin:40px auto;padding:0 24px;background:#f5f2ea;color:#191919;font:16px/1.5 system-ui}h1{font-size:38px}article{display:grid;grid-template-columns:70px 1fr;gap:20px;margin:18px 0;padding:24px;border:2px solid #222;border-radius:18px;background:#fff}.number{font-size:30px;font-weight:900;color:#3159c9}b{display:block;font-size:22px}small{color:#766}p{margin-bottom:0}</style><h1>${escapeHtml(source.project.title)}</h1><p>${escapeHtml(source.project.type)} · ${escapeHtml(source.project.format)} · ${escapeHtml(source.project.theme)} · ${escapeHtml(source.copy.language)}</p>${cards}</html>`;
-}
-
-function escapeHtml(value) {
-  return String(value || "").replace(/&/gu, "&amp;").replace(/</gu, "&lt;").replace(/>/gu, "&gt;").replace(/"/gu, "&quot;");
-}
-
 export function writeDeliverables(projectRoot, source, story) {
   const directory = path.join(projectRoot, "deliverables");
   fs.mkdirSync(directory, { recursive: true });
@@ -67,7 +59,16 @@ export function writeDeliverables(projectRoot, source, story) {
     project: source.project,
     scenes: story.scenes.map((scene) => ({ id: scene.id, title: scene.title, layout: scene.layout, start: scene.start, duration: scene.duration, visual: scene.visual.model, narration: scene.voice.cues.map((cue) => cue.text).join("") })),
   });
-  fs.writeFileSync(path.join(directory, "storyboard.html"), storyboardHtml(source, story));
+  const editor = storyboardEditorHtml(source, story);
+  fs.writeFileSync(path.join(directory, "storyboard.html"), editor);
+  fs.writeFileSync(path.join(directory, "storyboard-editor.html"), editor);
+  for (const [sourceFile, outputFile] of [
+    [source.direction?.lockedFile, "direction-plan.json"],
+    [source.sound?.lockedFile, "sound-plan.json"],
+    [source.cover?.lockedFile, "cover-plan.json"],
+  ]) {
+    if (sourceFile && fs.existsSync(path.join(projectRoot, sourceFile))) writeJson(path.join(directory, outputFile), readJson(path.join(projectRoot, sourceFile)));
+  }
   const factCheck = {
     schemaVersion: 1,
     status: source.content?.claims?.every((claim) => claim.verified || !["metric", "testimonial", "capability"].includes(claim.kind)) ? "ready" : "review",

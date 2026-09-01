@@ -102,6 +102,9 @@ try {
           assert.deepEqual(diagnostics.safeViolations, [], `${type}/${format}/${theme} safe-area violation`);
           assert.deepEqual(diagnostics.missingMedia, [], `${type}/${format}/${theme} missing media`);
           assert.deepEqual(diagnostics.layoutIssues, [], `${type}/${format}/${theme} layout issue`);
+          assert.deepEqual(diagnostics.aesthetic.repeatedTitle, [], `${type}/${format}/${theme} repeats the scene title inside the visual`);
+          assert.ok(diagnostics.aesthetic.score >= 52, `${type}/${format}/${theme} aesthetic score`);
+          assert.ok(diagnostics.aesthetic.motionPrimitives > 0, `${type}/${format}/${theme} semantic motion primitives`);
           assert.ok(diagnostics.contrast >= 4.5, `${type}/${format}/${theme} contrast`);
           const screenshot = path.join(outputRoot, `${type}-${format}-${theme}.png`);
           await page.screenshot({ path: screenshot, type: "png" });

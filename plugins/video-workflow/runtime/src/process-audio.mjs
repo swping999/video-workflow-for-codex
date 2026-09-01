@@ -4,6 +4,7 @@ import { sha256File, sha256Text, writeJson, readJson, run } from "./utils.mjs";
 import { findCueAudio, mediaBinaries, probeDuration } from "./media-tools.mjs";
 import { spokenText, validateLockedSource } from "./source.mjs";
 import { estimateWordTiming, writeDeliverables } from "./deliverables.mjs";
+import { materializeProceduralMusic, materializeProceduralSounds } from "./sound-design.mjs";
 
 function concatEscape(filePath) {
   return filePath.replaceAll("'", "'\\''");
@@ -63,9 +64,9 @@ function sfxStart(item, story) {
   return 0;
 }
 
-function buildAudioMix({ ffmpeg, projectRoot, source, story, narrationPath, targetI, targetTp }) {
-  const music = source.audio.music;
-  const sfx = Array.isArray(source.audio.sfx) ? source.audio.sfx : [];
+function buildAudioMix({ ffmpeg, projectRoot, source, story, narrationPath, targetI, targetTp, additionalSfx = [], generatedMusic = null }) {
+  const music = source.audio.music || generatedMusic;
+  const sfx = [...(Array.isArray(source.audio.sfx) ? source.audio.sfx : []), ...additionalSfx];
   const outputRelative = "assets/audio-master.wav";
   const outputPath = path.join(projectRoot, outputRelative);
   if (!music && !sfx.length) {
@@ -153,7 +154,7 @@ function buildAudioMix({ ffmpeg, projectRoot, source, story, narrationPath, targ
     fs.unlinkSync(corrected);
     verified = analyze(ffmpeg, outputPath, targetI, targetTp);
   }
-  return { file: outputRelative, fileSha256: sha256File(outputPath), duration: story.duration, integratedLufs: Number(verified.input_i), truePeakDbtp: Number(verified.input_tp), music: Boolean(music), sfx: sfx.length };
+  return { file: outputRelative, fileSha256: sha256File(outputPath), duration: story.duration, integratedLufs: Number(verified.input_i), truePeakDbtp: Number(verified.input_tp), music: Boolean(music), generatedMusic: Boolean(generatedMusic), sfx: sfx.length };
 }
 
 export function processAudio(projectArg) {
@@ -167,6 +168,7 @@ export function processAudio(projectArg) {
   if (request.lockedCopySha256 !== expectedHash) throw new Error("Audio request does not match the locked script");
 
   const rawDir = path.join(projectRoot, ".media", "raw-cues");
+  const rawSceneDir = path.join(projectRoot, ".media", "raw-scenes");
   const balancedDir = path.join(projectRoot, ".media", "balanced-cues");
   const concatDir = path.join(projectRoot, ".media", "scene-concats");
   const assetDir = path.join(projectRoot, "assets");
@@ -191,43 +193,69 @@ export function processAudio(projectArg) {
     const cueEntries = [];
     const concatLines = [];
     let cueCursor = 0;
+    const continuousRaw = findCueAudio(rawSceneDir, scene.id);
+    let concatAudio;
 
-    for (const [cueIndex, text] of scene.cues.entries()) {
-      const itemId = `${scene.id}-cue-${String(cueIndex + 1).padStart(2, "0")}`;
-      const requestItem = request.items.find((item) => item.id === itemId);
-      if (!requestItem || requestItem.text !== text) throw new Error(`${itemId}: audio request text drift`);
-      const rawPath = findCueAudio(rawDir, itemId);
-      if (!rawPath) throw new Error(`${itemId}: raw cue audio is missing from ${rawDir}`);
-      const balancedPath = path.join(balancedDir, `${itemId}.wav`);
+    if (continuousRaw) {
+      const balancedPath = path.join(balancedDir, `${scene.id}-continuous.wav`);
       run(
         ffmpeg,
-        ["-y", "-hide_banner", "-nostats", "-i", rawPath, "-af", `${trim},${compression}`, "-ar", "48000", "-ac", "1", "-c:a", "pcm_s16le", balancedPath],
-        `balance ${itemId}`,
+        ["-y", "-hide_banner", "-nostats", "-i", continuousRaw, "-af", `${trim},${compression}`, "-ar", "48000", "-ac", "1", "-c:a", "pcm_s16le", balancedPath],
+        `balance continuous ${scene.id}`,
       );
-      const cueDuration = probeDuration(ffprobe, balancedPath);
-      cueEntries.push({
-        at: Number(cueCursor.toFixed(6)),
-        duration: Number(cueDuration.toFixed(6)),
-        text,
-        words: cueWordTiming(rawDir, itemId, text, cueDuration, source.copy.language),
-      });
-      cueCursor += cueDuration;
-      concatLines.push(`file '${concatEscape(balancedPath)}'`);
-
-      if (cueIndex < scene.cues.length - 1) {
-        const silencePath = path.join(concatDir, `silence-${sentenceGap.toFixed(3)}.wav`);
-        if (!fs.existsSync(silencePath)) {
-          run(ffmpeg, ["-y", "-v", "error", "-f", "lavfi", "-i", "anullsrc=r=48000:cl=mono", "-t", String(sentenceGap), "-c:a", "pcm_s16le", silencePath], "create sentence gap");
-        }
-        concatLines.push(`file '${concatEscape(silencePath)}'`);
-        cueCursor += sentenceGap;
+      const sceneAudioDuration = probeDuration(ffprobe, balancedPath);
+      const weights = scene.cues.map((text) => Math.max(1, [...text].length));
+      const totalWeight = weights.reduce((sum, value) => sum + value, 0);
+      for (const [cueIndex, text] of scene.cues.entries()) {
+        const cueDuration = sceneAudioDuration * (weights[cueIndex] / totalWeight);
+        cueEntries.push({
+          at: Number(cueCursor.toFixed(6)),
+          duration: Number(cueDuration.toFixed(6)),
+          text,
+          words: estimateWordTiming(text, cueDuration, source.copy.language),
+        });
+        cueCursor += cueDuration;
       }
-    }
+      concatAudio = balancedPath;
+    } else {
 
-    const concatList = path.join(concatDir, `${scene.id}.txt`);
-    const concatAudio = path.join(concatDir, `${scene.id}.wav`);
-    fs.writeFileSync(concatList, `${concatLines.join("\n")}\n`);
-    run(ffmpeg, ["-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", concatList, "-c", "copy", concatAudio], `join ${scene.id}`);
+      for (const [cueIndex, text] of scene.cues.entries()) {
+        const itemId = `${scene.id}-cue-${String(cueIndex + 1).padStart(2, "0")}`;
+        const requestItem = request.items.find((item) => item.id === itemId);
+        if (!requestItem || requestItem.text !== text) throw new Error(`${itemId}: audio request text drift`);
+        const rawPath = findCueAudio(rawDir, itemId);
+        if (!rawPath) throw new Error(`${itemId}: raw cue audio is missing from ${rawDir}`);
+        const balancedPath = path.join(balancedDir, `${itemId}.wav`);
+        run(
+          ffmpeg,
+          ["-y", "-hide_banner", "-nostats", "-i", rawPath, "-af", `${trim},${compression}`, "-ar", "48000", "-ac", "1", "-c:a", "pcm_s16le", balancedPath],
+          `balance ${itemId}`,
+        );
+        const cueDuration = probeDuration(ffprobe, balancedPath);
+        cueEntries.push({
+          at: Number(cueCursor.toFixed(6)),
+          duration: Number(cueDuration.toFixed(6)),
+          text,
+          words: cueWordTiming(rawDir, itemId, text, cueDuration, source.copy.language),
+        });
+        cueCursor += cueDuration;
+        concatLines.push(`file '${concatEscape(balancedPath)}'`);
+
+        if (cueIndex < scene.cues.length - 1) {
+          const silencePath = path.join(concatDir, `silence-${sentenceGap.toFixed(3)}.wav`);
+          if (!fs.existsSync(silencePath)) {
+            run(ffmpeg, ["-y", "-v", "error", "-f", "lavfi", "-i", "anullsrc=r=48000:cl=mono", "-t", String(sentenceGap), "-c:a", "pcm_s16le", silencePath], "create sentence gap");
+          }
+          concatLines.push(`file '${concatEscape(silencePath)}'`);
+          cueCursor += sentenceGap;
+        }
+      }
+
+      const concatList = path.join(concatDir, `${scene.id}.txt`);
+      concatAudio = path.join(concatDir, `${scene.id}.wav`);
+      fs.writeFileSync(concatList, `${concatLines.join("\n")}\n`);
+      run(ffmpeg, ["-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", concatList, "-c", "copy", concatAudio], `join ${scene.id}`);
+    }
 
     const measured = analyze(ffmpeg, concatAudio, targetI, targetTp, compression);
     const normalization = [
@@ -329,7 +357,10 @@ export function processAudio(projectArg) {
   run(ffmpeg, ["-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", masterList, "-c", "copy", masterPath], "build narration master");
   const masterDuration = Number(probeDuration(ffprobe, masterPath).toFixed(6));
 
-  const mix = buildAudioMix({ ffmpeg, projectRoot, source, story, narrationPath: masterPath, targetI, targetTp });
+  const generatedSfx = materializeProceduralSounds({ ffmpeg, projectRoot, story, soundPlan: source.audio.soundPlan });
+  const generatedMusic = source.audio.music ? null : materializeProceduralMusic({ ffmpeg, projectRoot, story, soundPlan: source.audio.soundPlan });
+  const mix = buildAudioMix({ ffmpeg, projectRoot, source, story, narrationPath: masterPath, targetI, targetTp, additionalSfx: generatedSfx, generatedMusic });
+  mix.generatedSfx = generatedSfx.length;
   mix.duration = Number(probeDuration(ffprobe, path.join(projectRoot, mix.file)).toFixed(6));
   story.audio = { ...story.audio, finalMix: mix.file };
 

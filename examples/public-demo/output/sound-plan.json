@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "mode": "subtle",
+  "musicMood": "minimal-percussion",
+  "narrationPriority": true,
+  "ducking": {
+    "enabled": true,
+    "targetReductionDb": -12,
+    "attackMs": 15,
+    "releaseMs": 260
+  },
+  "cues": [
+    {
+      "id": "scene-01-1-chime",
+      "sceneId": "scene-01",
+      "motion": "focus",
+      "sound": "chime",
+      "offsetRatio": 0.08,
+      "volume": 0.22,
+      "procedural": true
+    },
+    {
+      "id": "scene-02-1-tick",
+      "sceneId": "scene-02",
+      "motion": "trace",
+      "sound": "tick",
+      "offsetRatio": 0.08,
+      "volume": 0.22,
+      "procedural": true
+    }
+  ]
+}

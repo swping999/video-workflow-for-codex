@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "formats": [
+    {
+      "format": "portrait",
+      "selected": "cover-portrait.png",
+      "selectedCandidate": "cover-portrait-1.png",
+      "candidates": [
+        {
+          "id": "cover-1",
+          "file": "cover-portrait-1.png",
+          "diagnostics": {
+            "score": 81,
+            "occupancy": 0.934,
+            "focusCount": 1,
+            "motionPrimitives": 1,
+            "duplicateText": [],
+            "repeatedTitle": [],
+            "captionOverlap": [],
+            "coverOverlap": false
+          }
+        },
+        {
+          "id": "cover-3",
+          "file": "cover-portrait-3.png",
+          "diagnostics": {
+            "score": 81,
+            "occupancy": 1,
+            "focusCount": 1,
+            "motionPrimitives": 1,
+            "duplicateText": [],
+            "repeatedTitle": [],
+            "captionOverlap": [],
+            "coverOverlap": false
+          }
+        },
+        {
+          "id": "cover-2",
+          "file": "cover-portrait-2.png",
+          "diagnostics": {
+            "score": 56,
+            "occupancy": 0.626,
+            "focusCount": 0,
+            "motionPrimitives": 1,
+            "duplicateText": [],
+            "repeatedTitle": [],
+            "captionOverlap": [],
+            "coverOverlap": true
+          }
+        }
+      ],
+      "selectedDiagnostics": {
+        "score": 81,
+        "occupancy": 0.934,
+        "focusCount": 1,
+        "motionPrimitives": 1,
+        "duplicateText": [],
+        "repeatedTitle": [],
+        "captionOverlap": [],
+        "coverOverlap": false
+      }
+    }
+  ]
+}

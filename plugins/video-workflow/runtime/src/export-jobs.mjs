@@ -22,15 +22,29 @@ export function exportJobs(projectArg) {
   const { projectRoot, source } = project;
   const replacements = source.audio.pronunciationReplacements || [];
   const audioRequest = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     provider: source.audio.provider,
     voice: source.audio.voice,
     language: source.copy.language,
     speed: source.audio.speed,
     prosody: source.audio.prosody || { rate: source.audio.speed },
+    continuousNarration: Boolean(source.audio.continuousNarration),
     lockedCopySha256: sha256Text(source.scenes.map(spokenText).join("\n")),
-    instructions: "Create one audio file per item. Speak ttsText while preserving text as the exact locked caption. Keep the id as the filename and place files in .media/raw-cues/. Optional word timestamps may be saved as <id>.words.json.",
+    instructions: "Preferred: create one continuous file per scenes[] entry, keep the scene id as the filename, and place it in .media/raw-scenes/. Fallback: create one file per items[] cue and place it in .media/raw-cues/. Speak ttsText while preserving text as the exact locked caption. Optional cue word timestamps may be saved as <id>.words.json.",
     acceptedFormats: ["wav", "flac", "mp3", "m4a", "aac"],
+    scenes: source.scenes.map((scene, sceneIndex) => ({
+      id: scene.id,
+      sceneIndex,
+      text: scene.cues.join(""),
+      ttsText: ttsText(scene.cues.join(""), replacements),
+      cueTexts: scene.cues,
+      language: source.copy.language,
+      voice: source.audio.voice,
+      prosody: {
+        ...(source.audio.prosody || { rate: source.audio.speed }),
+        emphasis: scene.visual?.direction?.beats?.[0]?.emphasis || source.audio.prosody?.emphasis || "moderate",
+      },
+    })),
     items: source.scenes.flatMap((scene, sceneIndex) =>
       scene.cues.map((text, cueIndex) => ({
         id: `${scene.id}-cue-${String(cueIndex + 1).padStart(2, "0")}`,
@@ -65,7 +79,8 @@ export function exportJobs(projectArg) {
         existingAsset: scene.visual.asset || firstAsset(scene.visual.model),
         layout: scene.layout,
         model: scene.visual.model,
-        prompt: `${source.visual.style}. ${personRule} Scene ${index + 1}: ${scene.visual.action}. Structured visual intent: ${JSON.stringify(scene.visual.model)}. Match a ${source.project.format} ${source.project.type} video for ${source.project.platform || "generic"}. Transparent or clean background. No readable text, invented claims, logos, or watermark.`,
+        direction: scene.visual.direction,
+        prompt: `${source.visual.style}. ${personRule} Scene ${index + 1}: ${scene.visual.action}. Direction: focus on ${scene.visual.direction?.focus || scene.title}; show ${JSON.stringify(scene.visual.direction?.relations || [])}; visual metaphor ${scene.visual.direction?.metaphor || "editorial focus"}; motion-ready layers for ${JSON.stringify(scene.visual.direction?.motion || [])}. Structured visual intent: ${JSON.stringify(scene.visual.model)}. Match a ${source.project.format} ${source.project.type} video for ${source.project.platform || "generic"}. Transparent or clean background. No readable text, invented claims, logos, or watermark.`,
       };
     }),
   };

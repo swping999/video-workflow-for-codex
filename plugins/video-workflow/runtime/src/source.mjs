@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { validateContentPlan } from "./content-schema.mjs";
+import { validateCoverPlan } from "./cover-plan.mjs";
+import { validateDirectionPlan } from "./direction.mjs";
 import { supportedLanguages } from "./language.mjs";
 import { canonicalParagraph, paragraphs, readJson, sha256Text } from "./utils.mjs";
 
@@ -48,7 +50,7 @@ export function validateLockedSource(projectArg) {
   const failures = [];
   const lockedParagraphs = paragraphs(lockedText);
 
-  if (![2, 3].includes(source.schemaVersion)) failures.push("unsupported story-source schema");
+  if (![2, 3, 4].includes(source.schemaVersion)) failures.push("unsupported story-source schema");
   if (source.copy?.status !== "locked") failures.push("copy.status must be locked");
   if (source.copy?.subtitlePolicy !== "verbatim") failures.push("subtitlePolicy must be verbatim");
   if (!supportedLanguages[source.copy?.language]) failures.push(`unsupported project language: ${source.copy?.language}`);
@@ -84,6 +86,29 @@ export function validateLockedSource(projectArg) {
       }
     }
   }
+  if (source.schemaVersion >= 4) {
+    for (const [label, entry, validator] of [
+      ["direction plan", source.direction, (value) => validateDirectionPlan(value, source.scenes?.length || 0)],
+      ["sound plan", source.sound, (value) => {
+        if (value?.schemaVersion !== 1 || !["off", "subtle", "full"].includes(value?.mode) || !Array.isArray(value?.cues)) throw new Error("invalid sound-plan schema");
+      }],
+      ["cover plan", source.cover, validateCoverPlan],
+    ]) {
+      const relative = entry?.lockedFile;
+      if (!relative || !insideProject(project.projectRoot, relative)) {
+        failures.push(`${label} path must stay inside the project directory`);
+        continue;
+      }
+      const filePath = path.resolve(project.projectRoot, relative);
+      if (!fs.existsSync(filePath)) {
+        failures.push(`locked ${label} is missing`);
+        continue;
+      }
+      const text = fs.readFileSync(filePath, "utf8");
+      if (entry.lockedSha256 !== sha256Text(text)) failures.push(`locked ${label} hash differs from project provenance`);
+      try { validator(JSON.parse(text)); } catch (error) { failures.push(`invalid locked ${label}: ${error.message}`); }
+    }
+  }
   if (!Array.isArray(source.scenes) || source.scenes.length === 0) failures.push("no scenes found");
   if (lockedParagraphs.length !== source.scenes?.length) {
     failures.push(`locked paragraphs=${lockedParagraphs.length}, scenes=${source.scenes?.length || 0}`);
@@ -115,6 +140,7 @@ export function validateLockedSource(projectArg) {
       else if (!fs.existsSync(path.resolve(project.projectRoot, asset))) failures.push(`${scene.id}: declared visual asset is missing: ${asset}`);
     }
     const model = scene.visual?.model;
+    if (source.schemaVersion >= 4 && (!scene.visual?.direction?.focus || !scene.visual?.direction?.motion?.length)) failures.push(`${scene.id}: visual direction is incomplete`);
     if (model?.kind?.endsWith("-chart") && !model.illustrative && !model.sourceId && !model.source) {
       failures.push(`${scene.id}: real chart has no source`);
     }
