@@ -72,7 +72,20 @@ function buildAudioMix({ ffmpeg, projectRoot, source, story, narrationPath, targ
     const measured = analyze(ffmpeg, narrationPath, targetI, targetTp);
     const normalization = [`loudnorm=I=${targetI}`, `TP=${targetTp}`, "LRA=7", `measured_I=${measured.input_i}`, `measured_TP=${measured.input_tp}`, `measured_LRA=${measured.input_lra}`, `measured_thresh=${measured.input_thresh}`, `offset=${measured.target_offset}`, "linear=true", "print_format=summary"].join(":");
     run(ffmpeg, ["-y", "-v", "error", "-i", narrationPath, "-af", normalization, "-ar", "48000", "-ac", "1", "-c:a", "pcm_s16le", outputPath], "normalize narration master");
-    const verified = analyze(ffmpeg, outputPath, targetI, targetTp);
+    let verified = analyze(ffmpeg, outputPath, targetI, targetTp);
+    for (let pass = 0; pass < 2; pass += 1) {
+      const gain = targetI - Number.parseFloat(verified.input_i);
+      if (Math.abs(gain) <= 0.2) break;
+      const corrected = `${outputPath}.corrected.wav`;
+      run(
+        ffmpeg,
+        ["-y", "-v", "error", "-i", outputPath, "-af", `volume=${gain.toFixed(2)}dB,alimiter=limit=0.8414:attack=5:release=80:level=false`, "-ar", "48000", "-ac", "1", "-c:a", "pcm_s16le", corrected],
+        "correct narration master loudness",
+      );
+      fs.copyFileSync(corrected, outputPath);
+      fs.unlinkSync(corrected);
+      verified = analyze(ffmpeg, outputPath, targetI, targetTp);
+    }
     return { file: outputRelative, fileSha256: sha256File(outputPath), duration: story.duration, integratedLufs: Number(verified.input_i), truePeakDbtp: Number(verified.input_tp), music: false, sfx: 0 };
   }
 
