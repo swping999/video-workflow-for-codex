@@ -13,15 +13,30 @@ const help = `Video Workflow for Codex
 
 Usage:
   video-workflow doctor
-  video-workflow create --script <file> --output <directory> --slug <slug> [--title <title>] [--type auto|explainer|listicle|workflow|comparison|promo|data-story] [--format landscape|portrait|social] [--theme whiteboard|editorial|tech|product]
+  video-workflow build --script <file> --output <directory> --slug <slug> [--brief <one-sentence request>] [--title <title>] [--type auto|explainer|listicle|workflow|comparison|promo|data-story] [--format landscape|portrait|social] [--theme whiteboard|editorial|tech|product] [--quality draft|medium|high]
+  video-workflow create --script <file> --output <directory> --slug <slug> [--brief <one-sentence request>] [--title <title>] [--type auto|explainer|listicle|workflow|comparison|promo|data-story] [--format landscape|portrait|social] [--theme whiteboard|editorial|tech|product]
   video-workflow export --project <directory>
-  video-workflow synthesize --project <directory> [--provider system|files|openai|elevenlabs|openai-compatible] [--overwrite]
+  video-workflow synthesize --project <directory> [--provider system|files] [--overwrite]
   video-workflow process-audio --project <directory>
   video-workflow verify --project <directory>
   video-workflow render --project <directory> [--quality draft|medium|high]
 
 Projects are isolated and never overwritten. Narration and captions remain locked to story-source.json scenes[].cues[].
+The build command is the account-free path: system TTS, built-in visuals, synchronized captions, verification, and final MP4.
 `;
+
+function creationOptions(args) {
+  return {
+    scriptPath: requireArg(args, "script"),
+    outputDir: requireArg(args, "output"),
+    slug: requireArg(args, "slug"),
+    title: args.title ? String(args.title) : null,
+    type: args.type ? String(args.type) : "auto",
+    format: args.format ? String(args.format) : "landscape",
+    theme: args.theme ? String(args.theme) : "editorial",
+    brief: args.brief ? String(args.brief) : null,
+  };
+}
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -32,20 +47,28 @@ async function main() {
   }
   if (command === "doctor") {
     const result = doctor();
-    console.log(`Environment ready: Node ${result.node}; browser ${result.browser}`);
+    console.log(`Environment ready: Node ${result.node}; browser ${result.browser}; free system TTS available`);
     return;
   }
   if (command === "create") {
-    const result = createProject({
-      scriptPath: requireArg(args, "script"),
-      outputDir: requireArg(args, "output"),
-      slug: requireArg(args, "slug"),
-      title: args.title ? String(args.title) : null,
-      type: args.type ? String(args.type) : "auto",
-      format: args.format ? String(args.format) : "landscape",
-      theme: args.theme ? String(args.theme) : "editorial",
-    });
+    const result = createProject(creationOptions(args));
     console.log(`Created ${result.source.project.type} ${result.source.project.format} project with ${result.source.scenes.length} scenes at ${result.target}`);
+    return;
+  }
+  if (command === "build") {
+    doctor();
+    const created = createProject(creationOptions(args));
+    console.log(`[1/6] Created ${created.source.project.type} ${created.source.project.format} project with ${created.source.scenes.length} scenes`);
+    const exported = exportJobs(created.target);
+    console.log(`[2/6] Exported ${exported.audioRequest.items.length} locked narration cues`);
+    const synthesized = await synthesizeProject(created.target, { provider: "system" });
+    console.log(`[3/6] Generated ${synthesized.generated} cues with free system TTS`);
+    const processed = processAudio(created.target);
+    console.log(`[4/6] Built the ${processed.story.duration.toFixed(3)}s audio-led timeline`);
+    const verified = verifyProject(created.target);
+    console.log(`[5/6] Verified ${verified.scenes} scenes, fingerprint ${verified.fingerprint}`);
+    const rendered = await renderProject(created.target, { quality: args.quality ? String(args.quality) : "high" });
+    console.log(`[6/6] Rendered ${rendered.output}`);
     return;
   }
 

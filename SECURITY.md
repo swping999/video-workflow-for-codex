@@ -8,7 +8,7 @@ Keep generated episodes outside the repository or in an ignored `episodes/` dire
 
 ## Voice and likeness
 
-Only clone or synthesize a voice when you have the speaker's authorization. Only use a person's likeness when you have permission to do so. The workflow accepts user-selected providers but does not bundle a cloning model, biometric reference, or cloud credential.
+Only use a voice recording when you have the speaker's authorization. Only use a person's likeness when you have permission to do so. The workflow accepts authorized local audio files but does not bundle a cloning model, biometric reference, paid-service adapter, or cloud credential.
 
 ## Reporting a vulnerability
 

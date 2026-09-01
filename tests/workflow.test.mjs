@@ -6,6 +6,7 @@ import test from "node:test";
 import { createProject, inferContentType } from "../plugins/video-workflow/runtime/src/project.mjs";
 import { exportJobs } from "../plugins/video-workflow/runtime/src/export-jobs.mjs";
 import { validateLockedSource } from "../plugins/video-workflow/runtime/src/source.mjs";
+import { synthesizeProject } from "../plugins/video-workflow/runtime/src/tts.mjs";
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "video-workflow-test-"));
@@ -24,6 +25,23 @@ test("create locks copy and splits paragraphs into scenes", () => {
   assert.equal(result.source.render.renderer, "chromium-frames");
   assert.equal(result.source.copy.subtitlePolicy, "verbatim");
   assert.equal(validateLockedSource(item.project).source.project.slug, "test-episode");
+});
+
+test("one-sentence brief provenance is locked beside the generated script", () => {
+  const item = fixture();
+  const brief = "做一个讲 MCP 的竖版科普视频。";
+  const result = createProject({ scriptPath: item.script, outputDir: item.project, slug: "brief-video", brief, format: "portrait" });
+  assert.equal(result.source.copy.source, "codex-generated-from-brief");
+  assert.equal(result.source.brief.status, "locked");
+  assert.equal(fs.readFileSync(path.join(item.project, "brief.locked.txt"), "utf8").trim(), brief);
+  assert.equal(validateLockedSource(item.project).source.brief.lockedFile, "brief.locked.txt");
+});
+
+test("brief provenance rejects a changed request", () => {
+  const item = fixture();
+  createProject({ scriptPath: item.script, outputDir: item.project, slug: "brief-video", brief: "做一个竖版科普视频。" });
+  fs.writeFileSync(path.join(item.project, "brief.locked.txt"), "改成广告视频。\n");
+  assert.throws(() => validateLockedSource(item.project), /locked brief hash differs/u);
 });
 
 test("content type and format options create reusable layouts", () => {
@@ -92,6 +110,13 @@ test("TTS pronunciation text can differ without changing locked captions", () =>
   const exported = exportJobs(item.project);
   assert.equal(exported.audioRequest.items[0].text, "AI 视频的字幕必须保留原文。");
   assert.equal(exported.audioRequest.items[0].ttsText, "A I 视频的字幕必须保留原文。");
+});
+
+test("runtime rejects cloud speech providers before making any request", async () => {
+  const item = fixture();
+  createProject({ scriptPath: item.script, outputDir: item.project, slug: "free-core" });
+  exportJobs(item.project);
+  await assert.rejects(() => synthesizeProject(item.project, { provider: "cloud" }), /free core never calls a cloud speech API/u);
 });
 
 test("project-owned paths cannot escape the project directory", () => {

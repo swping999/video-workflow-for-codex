@@ -31,6 +31,17 @@ export function validateLockedSource(projectArg) {
   if (source.copy?.subtitlePolicy !== "verbatim") failures.push("subtitlePolicy must be verbatim");
   const lockedHash = sha256Text(lockedParagraphs.map(canonicalParagraph).join("\n"));
   if (source.copy?.lockedSha256 !== lockedHash) failures.push("locked script hash differs from project provenance");
+  if (source.copy?.source === "codex-generated-from-brief") {
+    const briefPath = path.resolve(project.projectRoot, source.brief?.lockedFile || "brief.locked.txt");
+    if (briefPath !== project.projectRoot && !briefPath.startsWith(`${project.projectRoot}${path.sep}`)) {
+      failures.push("locked brief path must stay inside the project directory");
+    } else if (!fs.existsSync(briefPath)) {
+      failures.push("locked brief is missing");
+    } else {
+      const briefText = fs.readFileSync(briefPath, "utf8").replace(/\r\n?/g, "\n").trim();
+      if (!briefText || source.brief?.lockedSha256 !== sha256Text(briefText)) failures.push("locked brief hash differs from project provenance");
+    }
+  }
   if (!Array.isArray(source.scenes) || source.scenes.length === 0) failures.push("no scenes found");
   if (lockedParagraphs.length !== source.scenes?.length) {
     failures.push(`locked paragraphs=${lockedParagraphs.length}, scenes=${source.scenes?.length || 0}`);

@@ -18,7 +18,6 @@ export function exportJobs(projectArg) {
     language: source.copy.language,
     speed: source.audio.speed,
     lockedCopySha256: sha256Text(source.scenes.map(spokenText).join("\n")),
-    providerOptions: source.audio.providerOptions || {},
     instructions: "Create one audio file per item. Preserve the exact text, keep the id as the filename, and place files in .media/raw-cues/.",
     acceptedFormats: ["wav", "flac", "mp3", "m4a", "aac"],
     items: source.scenes.flatMap((scene, sceneIndex) =>

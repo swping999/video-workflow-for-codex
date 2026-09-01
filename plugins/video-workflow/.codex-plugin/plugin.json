@@ -1,7 +1,7 @@
 {
   "name": "video-workflow",
-  "version": "0.1.0",
-  "description": "Turn a locked script into a synchronized, verified video with reusable formats, themes, narration providers, and a deterministic renderer.",
+  "version": "0.2.0",
+  "description": "Turn one sentence or a locked script into a synchronized, verified MP4 with a completely free local production path.",
   "author": {
     "name": "swping999",
     "url": "https://github.com/swping999"
@@ -19,14 +19,16 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Video Workflow",
-    "shortDescription": "Build synchronized videos from locked scripts",
-    "longDescription": "Create an isolated video project from a locked script, select a content template and format, generate or import narration, synchronize captions and animation, normalize audio, verify timing, and render a final MP4 without HyperFrames or Remotion.",
+    "shortDescription": "One sentence to a free, verified video",
+    "longDescription": "Tell Codex what video to make in one sentence. Codex infers the content type, format, theme, scenes, and script, then the plugin uses free system narration, built-in visuals, synchronized captions and animation, loudness normalization, deterministic rendering, and quality gates to deliver a final MP4 without paid media APIs, HyperFrames, or Remotion.",
     "developerName": "swping999",
     "category": "Productivity",
     "capabilities": [
+      "One-sentence brief decomposition",
+      "Account-free one-command build",
       "Locked script and caption source",
       "Voice and caption synchronization",
-      "Image prompt export",
+      "Built-in code-rendered visuals",
       "Audio loudness normalization",
       "Six reusable content templates",
       "Landscape, portrait, and social formats",
@@ -39,8 +41,8 @@
     "logo": "./assets/logo.svg",
     "logoDark": "./assets/logo-dark.svg",
     "defaultPrompt": [
-      "Turn this locked script into a verified vertical video.",
-      "Build a six-item list video from this script.",
+      "Make a vertical explainer video about MCP.",
+      "Make a six-item list video about useful Codex Skills.",
       "Check this video project for caption, audio, and timing drift."
     ]
   }

@@ -9,4 +9,4 @@ Runtime packages are installed from npm and retain their own licenses:
 
 FFmpeg licensing varies with the selected binary build and enabled components. Users who replace the installer binary are responsible for checking their chosen build.
 
-Optional narration services and local speech engines are not dependencies and are not redistributed. Their APIs, software, model weights, and generated voices remain subject to their own terms. This repository does not redistribute voice models, personal voice samples, identity photographs, generated episodes, or cloud credentials.
+Operating-system speech engines are invoked locally and are not redistributed. User-supplied audio remains subject to its own rights and terms. This repository does not redistribute voice models, personal voice samples, identity photographs, generated episodes, or cloud credentials.

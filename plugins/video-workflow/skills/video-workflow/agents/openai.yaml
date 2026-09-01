@@ -1,6 +1,6 @@
 interface:
   display_name: "Video Workflow"
-  short_description: "Build synchronized videos from locked scripts"
-  default_prompt: "Use $video-workflow to turn this script into a verified vertical video."
+  short_description: "Turn one sentence into a free, verified video"
+  default_prompt: "Use $video-workflow to make a vertical explainer video about MCP."
 policy:
   allow_implicit_invocation: true

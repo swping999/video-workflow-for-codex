@@ -7,5 +7,6 @@ Contributions are welcome when they preserve the workflow's core contract:
 3. visual-only labels are not silently inserted into speech;
 4. rendering is blocked when required media or timing checks fail;
 5. personal voice and identity references remain outside the repository.
+6. the default build remains account-free and does not call cloud speech or image APIs.
 
 Run `npm run check` before opening a pull request. New render adapters should be optional and documented. New examples must use project-owned, synthetic, or properly licensed assets.

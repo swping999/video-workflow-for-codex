@@ -200,7 +200,7 @@ export function processAudio(projectArg) {
   fs.writeFileSync(path.join(projectRoot, "story.js"), `window.VIDEO_WORKFLOW_STORY = ${JSON.stringify(story, null, 2)};\n`);
   writeJson(path.join(assetDir, "voice-manifest.json"), {
     schemaVersion: 2,
-    verifiedAgainst: "locked-copy-provider-neutral-dynamic-balanced-loudness",
+    verifiedAgainst: "locked-copy-free-local-dynamic-balanced-loudness",
     scenes: manifestScenes,
     master: { file: masterRelative, fileSha256: sha256File(masterPath), duration: masterDuration },
   });

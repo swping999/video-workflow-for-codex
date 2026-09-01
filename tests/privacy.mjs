@@ -11,6 +11,10 @@ const forbidden = [
   "identity" + "-reference.png",
   "Sen" + "try",
   "So" + "ng 的",
+  "OPENAI" + "_API_KEY",
+  "ELEVENLABS" + "_API_KEY",
+  "api." + "openai.com",
+  "api." + "elevenlabs.io",
 ];
 const mediaExtensions = new Set([".wav", ".aiff", ".mp3", ".m4a", ".mp4", ".mov", ".png", ".jpg", ".jpeg", ".webp"]);
 const failures = [];
@@ -35,4 +39,4 @@ if (failures.length) {
   console.error(failures.join("\n"));
   process.exit(1);
 }
-console.log("Privacy scan passed: no personal voice, identity, absolute home path, or bundled media found.");
+console.log("Privacy/free-core scan passed: no personal media, private home path, bundled media, or cloud speech credential hooks found.");
