@@ -101,7 +101,9 @@ function buildAudioMix({ ffmpeg, projectRoot, source, story, narrationPath, targ
     args.push("-i", sfxPath);
     const delay = Math.round(sfxStart(item, story) * 1000);
     const volume = Math.max(0, Math.min(2, Number(item.volume ?? 0.5)));
-    filters.push(`[${inputIndex}:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=mono,volume=${volume},adelay=${delay}:all=1,apad,atrim=0:${story.duration}[sfx${index}]`);
+    // The stream is normalized to mono above, so one delay value covers the
+    // only channel and remains compatible with older FFmpeg adelay builds.
+    filters.push(`[${inputIndex}:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=mono,volume=${volume},adelay=${delay},apad,atrim=0:${story.duration}[sfx${index}]`);
     mixLabels.push(`[sfx${index}]`);
     inputIndex += 1;
   }
